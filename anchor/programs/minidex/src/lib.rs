@@ -20,6 +20,10 @@ pub mod minidex {
         initialize(ctx, fee_rate)
     }
 
+    pub fn add_liquidity(ctx: Context<AddLiquidity>, amount_a: u64, amount_b: u64, min_lp_tokens: u64) -> Result<()> {
+        liquidity_add(ctx, amount_a, amount_b, min_lp_tokens)
+    }
+
    
 }
 
