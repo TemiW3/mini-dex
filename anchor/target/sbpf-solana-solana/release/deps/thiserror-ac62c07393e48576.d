@@ -1,0 +1,10 @@
+/Users/temiloluwawilliams/Documents/mini-dex/anchor/target/sbpf-solana-solana/release/deps/libthiserror-ac62c07393e48576.rmeta: /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/lib.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/aserror.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/display.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/provide.rs
+
+/Users/temiloluwawilliams/Documents/mini-dex/anchor/target/sbpf-solana-solana/release/deps/libthiserror-ac62c07393e48576.rlib: /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/lib.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/aserror.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/display.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/provide.rs
+
+/Users/temiloluwawilliams/Documents/mini-dex/anchor/target/sbpf-solana-solana/release/deps/thiserror-ac62c07393e48576.d: /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/lib.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/aserror.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/display.rs /Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/provide.rs
+
+/Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/lib.rs:
+/Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/aserror.rs:
+/Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/display.rs:
+/Users/temiloluwawilliams/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/provide.rs:
