@@ -24,6 +24,10 @@ pub mod minidex {
         liquidity_add(ctx, amount_a, amount_b, min_lp_tokens)
     }
 
+    pub fn remove_liquidity(ctx: Context<RemoveLiquidity>, lp_tokens: u64, min_amount_a: u64, min_amount_b: u64) -> Result<()> {
+        liquidity_remove(ctx, lp_tokens, min_amount_a, min_amount_b)
+    }
+
    
 }
 

@@ -16,4 +16,8 @@ pub enum MinidexError {
     SlippageExceeded,
     #[msg("LP token amount must be greater than zero")]
     ZeroLPTokens,
+    #[msg("Pool is empty")]
+    EmptyPool,
+    #[msg("Insufficient LP tokens")]
+    InsufficientLPTokens,
 }
