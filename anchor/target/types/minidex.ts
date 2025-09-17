@@ -14,6 +14,100 @@ export type Minidex = {
   },
   "instructions": [
     {
+      "name": "addLiquidity",
+      "discriminator": [
+        181,
+        157,
+        89,
+        67,
+        143,
+        182,
+        52,
+        72
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_a_mint",
+                "account": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_b_mint",
+                "account": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "userTokenAAccount",
+          "writable": true
+        },
+        {
+          "name": "userTokenBAccount",
+          "writable": true
+        },
+        {
+          "name": "userLpAccount",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tokenAVault",
+          "writable": true
+        },
+        {
+          "name": "tokenBVault",
+          "writable": true
+        },
+        {
+          "name": "lpMint",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amountA",
+          "type": "u64"
+        },
+        {
+          "name": "amountB",
+          "type": "u64"
+        },
+        {
+          "name": "minLpTokens",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "initializePool",
       "discriminator": [
         95,
@@ -96,6 +190,95 @@ export type Minidex = {
           "type": "u16"
         }
       ]
+    },
+    {
+      "name": "removeLiquidity",
+      "discriminator": [
+        80,
+        85,
+        209,
+        72,
+        24,
+        206,
+        177,
+        108
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_a_mint",
+                "account": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_b_mint",
+                "account": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "userTokenAAccount",
+          "writable": true
+        },
+        {
+          "name": "userTokenBAccount",
+          "writable": true
+        },
+        {
+          "name": "userLpToken",
+          "writable": true
+        },
+        {
+          "name": "tokenAVault",
+          "writable": true
+        },
+        {
+          "name": "tokenBVault",
+          "writable": true
+        },
+        {
+          "name": "lpMint",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "lpTokens",
+          "type": "u64"
+        },
+        {
+          "name": "minAmountA",
+          "type": "u64"
+        },
+        {
+          "name": "minAmountB",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -148,6 +331,16 @@ export type Minidex = {
       "code": 6006,
       "name": "zeroLpTokens",
       "msg": "LP token amount must be greater than zero"
+    },
+    {
+      "code": 6007,
+      "name": "emptyPool",
+      "msg": "Pool is empty"
+    },
+    {
+      "code": 6008,
+      "name": "insufficientLpTokens",
+      "msg": "Insufficient LP tokens"
     }
   ],
   "types": [

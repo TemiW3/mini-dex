@@ -8,6 +8,100 @@
   },
   "instructions": [
     {
+      "name": "add_liquidity",
+      "discriminator": [
+        181,
+        157,
+        89,
+        67,
+        143,
+        182,
+        52,
+        72
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_a_mint",
+                "account": "Pool"
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_b_mint",
+                "account": "Pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_token_a_account",
+          "writable": true
+        },
+        {
+          "name": "user_token_b_account",
+          "writable": true
+        },
+        {
+          "name": "user_lp_account",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_a_vault",
+          "writable": true
+        },
+        {
+          "name": "token_b_vault",
+          "writable": true
+        },
+        {
+          "name": "lp_mint",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount_a",
+          "type": "u64"
+        },
+        {
+          "name": "amount_b",
+          "type": "u64"
+        },
+        {
+          "name": "min_lp_tokens",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "initialize_pool",
       "discriminator": [
         95,
@@ -90,6 +184,95 @@
           "type": "u16"
         }
       ]
+    },
+    {
+      "name": "remove_liquidity",
+      "discriminator": [
+        80,
+        85,
+        209,
+        72,
+        24,
+        206,
+        177,
+        108
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_a_mint",
+                "account": "Pool"
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_b_mint",
+                "account": "Pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_token_a_account",
+          "writable": true
+        },
+        {
+          "name": "user_token_b_account",
+          "writable": true
+        },
+        {
+          "name": "user_lp_token",
+          "writable": true
+        },
+        {
+          "name": "token_a_vault",
+          "writable": true
+        },
+        {
+          "name": "token_b_vault",
+          "writable": true
+        },
+        {
+          "name": "lp_mint",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "lp_tokens",
+          "type": "u64"
+        },
+        {
+          "name": "min_amount_a",
+          "type": "u64"
+        },
+        {
+          "name": "min_amount_b",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -142,6 +325,16 @@
       "code": 6006,
       "name": "ZeroLPTokens",
       "msg": "LP token amount must be greater than zero"
+    },
+    {
+      "code": 6007,
+      "name": "EmptyPool",
+      "msg": "Pool is empty"
+    },
+    {
+      "code": 6008,
+      "name": "InsufficientLPTokens",
+      "msg": "Insufficient LP tokens"
     }
   ],
   "types": [
