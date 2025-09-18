@@ -35,7 +35,7 @@ pub struct SetupLpMint<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn initialize_lp_mint(ctx: Context<SetupLpMint>) -> Result<()> {
+pub fn initialize_lp(ctx: Context<SetupLpMint>) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
     
     pool.lp_mint = ctx.accounts.lp_mint.key();

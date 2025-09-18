@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 use anchor_spl::token::{Mint, Token, TokenAccount, Burn, burn, Transfer, transfer};
+use anchor_spl::associated_token::AssociatedToken;
 use crate::state::Pool;
 use crate::errors::*;
 
@@ -122,8 +123,8 @@ pub struct RemoveLiquidity<'info> {
 
      #[account(
         mut,
-        token::mint = pool.lp_mint,
-        token::authority = user
+        associated_token::mint = pool.lp_mint,
+        associated_token::authority = user
     )]
     pub user_lp_token: Account<'info, TokenAccount>,
 
@@ -146,4 +147,6 @@ pub struct RemoveLiquidity<'info> {
     pub lp_mint: Account<'info, Mint>,
 
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info, System>,
 }

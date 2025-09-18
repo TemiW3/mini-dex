@@ -38,7 +38,7 @@ pub struct SetupVaultA<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn initialize_vault_a(ctx: Context<SetupVaultA>) -> Result<()> {
+pub fn initialize_a(ctx: Context<SetupVaultA>) -> Result<()> {
     let pool = &mut ctx.accounts.pool;
     
     pool.token_a_vault = ctx.accounts.token_a_vault.key();

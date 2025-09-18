@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
 use anchor_spl::token::{Mint, Token, TokenAccount, Transfer, transfer, mint_to};
+use anchor_spl::associated_token::AssociatedToken;
 
 use crate::state::*;
 use crate::errors::*;
@@ -94,7 +95,15 @@ pub fn liquidity_add(ctx: Context<AddLiquidity>, amount_a: u64, amount_b: u64, m
 
     pool.reserve_a = pool.reserve_a.checked_add(amount_a).ok_or(MinidexError::MathOverflow)?;
     pool.reserve_b = pool.reserve_b.checked_add(amount_b).ok_or(MinidexError::MathOverflow)?;
-    pool.total_lp_supply = pool.total_lp_supply.checked_add(lp_tokens).ok_or(MinidexError::MathOverflow)?;
+
+    let total_lp_increase = if pool.total_lp_supply == 0 {
+        lp_tokens.checked_add(MINIMUM_LIQUIDITY).ok_or(MinidexError::MathOverflow)?
+    } else {
+        lp_tokens
+    };
+
+    pool.total_lp_supply = pool.total_lp_supply.checked_add(total_lp_increase).ok_or(MinidexError::MathOverflow)?;
+
 
     Ok(())
 }
@@ -151,8 +160,8 @@ pub struct AddLiquidity<'info> {
     #[account(
         init_if_needed,
         payer = user,
-        token::mint = lp_mint,
-        token::authority = user,
+        associated_token::mint = lp_mint,
+        associated_token::authority = user,
     )]
     pub user_lp_account: Account<'info, TokenAccount>,
 
@@ -176,5 +185,6 @@ pub struct AddLiquidity<'info> {
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 
 }
