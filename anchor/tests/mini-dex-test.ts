@@ -126,6 +126,7 @@ describe('MiniDex', () => {
         expect(error.message).to.include('Invalid fee rate')
       }
     })
+
     it('Should initialize the liquidity pool', async () => {
       // Derive PDA addresses for vaults and LP mint
       const [tokenAVaultPda] = PublicKey.findProgramAddressSync(
