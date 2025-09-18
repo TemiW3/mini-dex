@@ -108,6 +108,79 @@ export type Minidex = {
       ]
     },
     {
+      "name": "initializePool",
+      "discriminator": [
+        95,
+        180,
+        10,
+        172,
+        84,
+        174,
+        232,
+        40
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tokenAMint"
+        },
+        {
+          "name": "tokenBMint"
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tokenAMint"
+              },
+              {
+                "kind": "account",
+                "path": "tokenBMint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "feeRate",
+          "type": "u16"
+        },
+        {
+          "name": "tokenAVault",
+          "type": "pubkey"
+        },
+        {
+          "name": "tokenBVault",
+          "type": "pubkey"
+        },
+        {
+          "name": "lpMint",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "removeLiquidity",
       "discriminator": [
         80,

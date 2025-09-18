@@ -16,8 +16,8 @@ declare_id!("JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H");
 pub mod minidex {
     use super::*;
 
-    pub fn initialize_pool(ctx: Context<InitializePool>, fee_rate: u16) -> Result<()> {
-        initialize(ctx, fee_rate)
+    pub fn initialize_pool(ctx: Context<InitializePool>, fee_rate: u16, token_a_vault: Pubkey, token_b_vault: Pubkey, lp_mint: Pubkey) -> Result<()> {
+        initialize(ctx, fee_rate, token_a_vault, token_b_vault, lp_mint)
     }
 
     pub fn add_liquidity(ctx: Context<AddLiquidity>, amount_a: u64, amount_b: u64, min_lp_tokens: u64) -> Result<()> {

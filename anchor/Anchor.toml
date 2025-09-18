@@ -1,5 +1,6 @@
 [toolchain]
 package_manager = "yarn"
+anchor_version = "0.31.1"
 
 [features]
 resolution = true
@@ -16,5 +17,4 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-[test]
-command = "yarn run ts-mocha -r ts-node/register -p ./tsconfig.json -t 1000000 'anchor/tests/**/*.ts'"
+test = "npx ts-mocha -r ts-node/register -p ./tsconfig.json -t 1000000 'tests/**/*.ts'"

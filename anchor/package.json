@@ -1,0 +1,20 @@
+{
+  "name": "anchor",
+  "version": "1.0.0",
+  "main": "codama.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "mocha": "^11.7.2",
+    "ts-mocha": "^11.1.0",
+    "ts-node": "^10.9.2"
+  }
+}
