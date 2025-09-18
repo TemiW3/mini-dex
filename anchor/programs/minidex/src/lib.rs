@@ -5,10 +5,10 @@ pub mod state;
 pub mod instructions;
 pub mod errors;
 pub mod constants;
+pub mod utils;
 
 use instructions::*;
 use state::*;
-use constants::*;
 
 declare_id!("JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H");
 
@@ -35,6 +35,10 @@ pub mod minidex {
 
     pub fn remove_liquidity(ctx: Context<RemoveLiquidity>, lp_tokens: u64, min_amount_a: u64, min_amount_b: u64) -> Result<()> {
         liquidity_remove(ctx, lp_tokens, min_amount_a, min_amount_b)
+    }
+
+    pub fn swap_tokens(ctx: Context<Swap>, amount_in: u64, min_amount_out: u64, token_a_to_b: bool) -> Result<()> {
+        token_swap(ctx, amount_in, min_amount_out, token_a_to_b)
     }
 
    

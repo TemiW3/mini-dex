@@ -20,4 +20,10 @@ pub enum MinidexError {
     EmptyPool,
     #[msg("Insufficient LP tokens")]
     InsufficientLPTokens,
+    #[msg("Insufficient source tokens")]
+    InsufficientSourceTokens,
+    #[msg("Zero swap amount")]
+    ZeroSwapAmount,
+    #[msg("Insufficient user balance")]
+    InsufficientUserBalance,
 }
