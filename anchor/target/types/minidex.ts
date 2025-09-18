@@ -749,6 +749,87 @@ export type Minidex = {
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "swapTokens",
+      "discriminator": [
+        201,
+        226,
+        234,
+        16,
+        70,
+        155,
+        131,
+        206
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pool",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_a_mint",
+                "account": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "pool.token_b_mint",
+                "account": "pool"
+              }
+            ]
+          }
+        },
+        {
+          "name": "userTokenAAccount",
+          "writable": true
+        },
+        {
+          "name": "userTokenBAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenAVault",
+          "writable": true
+        },
+        {
+          "name": "tokenBVault",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amountIn",
+          "type": "u64"
+        },
+        {
+          "name": "minAmountOut",
+          "type": "u64"
+        },
+        {
+          "name": "tokenAToB",
+          "type": "bool"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -811,6 +892,21 @@ export type Minidex = {
       "code": 6008,
       "name": "insufficientLpTokens",
       "msg": "Insufficient LP tokens"
+    },
+    {
+      "code": 6009,
+      "name": "insufficientSourceTokens",
+      "msg": "Insufficient source tokens"
+    },
+    {
+      "code": 6010,
+      "name": "zeroSwapAmount",
+      "msg": "Zero swap amount"
+    },
+    {
+      "code": 6011,
+      "name": "insufficientUserBalance",
+      "msg": "Insufficient user balance"
     }
   ],
   "types": [

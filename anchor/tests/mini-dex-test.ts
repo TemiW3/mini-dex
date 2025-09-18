@@ -320,4 +320,205 @@ describe('MiniDex', () => {
       }
     })
   })
+
+  describe('Token Swap Tests', () => {
+    it('Should swap Token A for Token B', async () => {
+      const amountIn = 1000
+      const minAmountOut = 3500 // More reasonable expectation
+      const aToB = true
+
+      // Get initial balances
+      const initialTokenA = await getAccount(provider.connection, userTokenA)
+      const initialTokenB = await getAccount(provider.connection, userTokenB)
+
+      await program.methods
+        .swapTokens(new anchor.BN(amountIn), new anchor.BN(minAmountOut), aToB)
+        .accountsStrict({
+          user: user.publicKey,
+          pool: poolPda,
+          userTokenAAccount: userTokenA,
+          userTokenBAccount: userTokenB,
+          tokenAVault: tokenAVault,
+          tokenBVault: tokenBVault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([user])
+        .rpc()
+
+      // Check balances changed
+      const finalTokenA = await getAccount(provider.connection, userTokenA)
+      const finalTokenB = await getAccount(provider.connection, userTokenB)
+
+      expect(Number(finalTokenA.amount)).to.equal(Number(initialTokenA.amount) - amountIn)
+      expect(Number(finalTokenB.amount)).to.be.greaterThan(Number(initialTokenB.amount))
+
+      // Verify pool reserves updated
+      const poolAccount = await program.account.pool.fetch(poolPda)
+      expect(poolAccount.reserveA.toNumber()).to.equal(16000) // 15000 + 1000
+      expect(poolAccount.reserveB.toNumber()).to.be.lessThan(60000) // Should decrease
+    })
+
+    it('Should swap Token B for Token A', async () => {
+      const amountIn = 4000
+      const minAmountOut = 800 // More reasonable expectation
+      const aToB = false
+
+      // Get initial balances
+      const initialTokenA = await getAccount(provider.connection, userTokenA)
+      const initialTokenB = await getAccount(provider.connection, userTokenB)
+
+      await program.methods
+        .swapTokens(new anchor.BN(amountIn), new anchor.BN(minAmountOut), aToB)
+        .accountsStrict({
+          user: user.publicKey,
+          pool: poolPda,
+          userTokenAAccount: userTokenA,
+          userTokenBAccount: userTokenB,
+          tokenAVault: tokenAVault,
+          tokenBVault: tokenBVault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([user])
+        .rpc()
+
+      // Check balances changed
+      const finalTokenA = await getAccount(provider.connection, userTokenA)
+      const finalTokenB = await getAccount(provider.connection, userTokenB)
+
+      expect(Number(finalTokenB.amount)).to.equal(Number(initialTokenB.amount) - amountIn)
+      expect(Number(finalTokenA.amount)).to.be.greaterThan(Number(initialTokenA.amount))
+    })
+
+    it('Should fail with slippage protection', async () => {
+      const amountIn = 1000
+      const minAmountOut = 10000 // Unrealistic expectation
+      const aToB = true
+
+      try {
+        await program.methods
+          .swapTokens(new anchor.BN(amountIn), new anchor.BN(minAmountOut), aToB)
+          .accountsStrict({
+            user: user.publicKey,
+            pool: poolPda,
+            userTokenAAccount: userTokenA,
+            userTokenBAccount: userTokenB,
+            tokenAVault: tokenAVault,
+            tokenBVault: tokenBVault,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          })
+          .signers([user])
+          .rpc()
+
+        expect.fail('Should have failed with slippage exceeded')
+      } catch (error) {
+        expect(error.message).to.include('SlippageExceeded')
+      }
+    })
+  })
+
+  describe('Liquidity Removal Tests', () => {
+    it('Should remove liquidity from the pool', async () => {
+      const lpTokens = 10000
+      const minAmountA = 2000
+      const minAmountB = 8000
+
+      // Get initial balances
+      const initialTokenA = await getAccount(provider.connection, userTokenA)
+      const initialTokenB = await getAccount(provider.connection, userTokenB)
+      const initialLpTokens = await getAccount(provider.connection, userLpToken)
+
+      await program.methods
+        .removeLiquidity(new anchor.BN(lpTokens), new anchor.BN(minAmountA), new anchor.BN(minAmountB))
+        .accountsStrict({
+          user: user.publicKey,
+          pool: poolPda,
+          userTokenAAccount: userTokenA,
+          userTokenBAccount: userTokenB,
+          userLpToken: userLpToken,
+          tokenAVault: tokenAVault,
+          tokenBVault: tokenBVault,
+          lpMint: lpMint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([user])
+        .rpc()
+
+      // Check LP tokens were burned
+      const finalLpTokens = await getAccount(provider.connection, userLpToken)
+      expect(Number(finalLpTokens.amount)).to.equal(Number(initialLpTokens.amount) - lpTokens)
+
+      // Check received tokens
+      const finalTokenA = await getAccount(provider.connection, userTokenA)
+      const finalTokenB = await getAccount(provider.connection, userTokenB)
+
+      expect(Number(finalTokenA.amount)).to.be.greaterThan(Number(initialTokenA.amount))
+      expect(Number(finalTokenB.amount)).to.be.greaterThan(Number(initialTokenB.amount))
+
+      // Verify pool reserves decreased
+      const poolAccount = await program.account.pool.fetch(poolPda)
+      expect(poolAccount.totalLpSupply.toNumber()).to.be.lessThan(30000)
+    })
+
+    it('Should fail with slippage protection', async () => {
+      const lpTokens = 1000
+      const minAmountA = 10000 // Unrealistic expectation
+      const minAmountB = 40000
+
+      try {
+        await program.methods
+          .removeLiquidity(new anchor.BN(lpTokens), new anchor.BN(minAmountA), new anchor.BN(minAmountB))
+          .accountsStrict({
+            user: user.publicKey,
+            pool: poolPda,
+            userTokenAAccount: userTokenA,
+            userTokenBAccount: userTokenB,
+            userLpToken: userLpToken,
+            tokenAVault: tokenAVault,
+            tokenBVault: tokenBVault,
+            lpMint: lpMint,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([user])
+          .rpc()
+
+        expect.fail('Should have failed with slippage exceeded')
+      } catch (error) {
+        expect(error.message).to.include('SlippageExceeded')
+      }
+    })
+
+    it('Should fail with insufficient LP tokens', async () => {
+      const lpTokens = 10000000 // More than user has
+      const minAmountA = 1
+      const minAmountB = 1
+
+      try {
+        await program.methods
+          .removeLiquidity(new anchor.BN(lpTokens), new anchor.BN(minAmountA), new anchor.BN(minAmountB))
+          .accountsStrict({
+            user: user.publicKey,
+            pool: poolPda,
+            userTokenAAccount: userTokenA,
+            userTokenBAccount: userTokenB,
+            userLpToken: userLpToken,
+            tokenAVault: tokenAVault,
+            tokenBVault: tokenBVault,
+            lpMint: lpMint,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([user])
+          .rpc()
+
+        expect.fail('Should have failed with insufficient LP tokens')
+      } catch (error) {
+        expect(error.message).to.include('InsufficientLPTokens')
+      }
+    })
+  })
 })
