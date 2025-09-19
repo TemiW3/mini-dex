@@ -18,7 +18,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'frontend/src'),
+      '@': resolve(__dirname, '/src'),
     },
   },
   test: {
