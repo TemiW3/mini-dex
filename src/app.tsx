@@ -28,7 +28,7 @@ export function App() {
           <Router>
             <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
               <Header />
-              <main className="container mx-auto px-4 py-6">
+              <main>
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/swap" element={<Swap />} />
