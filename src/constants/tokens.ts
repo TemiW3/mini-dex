@@ -43,4 +43,4 @@ export const TOKENS: Token[] = [
   },
 ]
 
-export const PROGRAM_ID = 'MiniDEXProgram11111111111111111111111111111'
+export const PROGRAM_ID = 'JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H'
