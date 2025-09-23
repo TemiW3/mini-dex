@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/minidex.json`.
  */
 export type Minidex = {
-  "address": "JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H",
+  "address": "5hLC8bG9NicQQLHyByQxfoW6n8TjiHqpy3sHURkyUxPW",
   "metadata": {
     "name": "minidex",
     "version": "0.1.0",
