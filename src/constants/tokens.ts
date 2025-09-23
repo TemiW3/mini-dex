@@ -43,4 +43,4 @@ export const TOKENS: Token[] = [
   },
 ]
 
-export const PROGRAM_ID = 'JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H'
+export const PROGRAM_ID = '5hLC8bG9NicQQLHyByQxfoW6n8TjiHqpy3sHURkyUxPW'

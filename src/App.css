@@ -1,0 +1,162 @@
+/* Custom styles for the Mini DEX */
+
+.wallet-adapter-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  padding: 12px 24px !important;
+  transition: all 0.3s ease !important;
+}
+
+.wallet-adapter-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3) !important;
+}
+
+.wallet-adapter-button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Input styling */
+.dex-input {
+  @apply w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200;
+}
+
+.dex-input:focus {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Button styling */
+.dex-button {
+  @apply px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.dex-button-primary {
+  @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-lg hover:-translate-y-0.5;
+}
+
+.dex-button-secondary {
+  @apply bg-gray-600 hover:bg-gray-700 border border-gray-500;
+}
+
+.dex-button-success {
+  @apply bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700;
+}
+
+.dex-button-warning {
+  @apply bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700;
+}
+
+/* Card hover effects */
+.dex-card {
+  transition: all 0.3s ease;
+}
+
+.dex-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Token selector styling */
+.token-selector {
+  @apply flex items-center space-x-3 p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200;
+}
+
+.token-selector:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  @apply bg-gray-700/50 rounded-xl p-4 border border-gray-600;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  @apply border-purple-500/50;
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.15);
+}
+
+/* Loading animations */
+.loading-spinner {
+  border: 2px solid #374151;
+  border-top: 2px solid #8b5cf6;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Success/Error message styling */
+.message-success {
+  @apply bg-green-900/50 border border-green-500 text-green-200 p-4 rounded-lg;
+}
+
+.message-error {
+  @apply bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-lg;
+}
+
+.message-info {
+  @apply bg-blue-900/50 border border-blue-500 text-blue-200 p-4 rounded-lg;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .dex-button {
+    @apply w-full;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

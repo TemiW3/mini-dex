@@ -10,7 +10,7 @@ pub mod utils;
 use instructions::*;
 use state::*;
 
-declare_id!("JAVuBXeBZqXNtS73azhBDAoYaaAFfo4gWXoZe2e7Jf8H");
+declare_id!("5hLC8bG9NicQQLHyByQxfoW6n8TjiHqpy3sHURkyUxPW");
 
 #[program]
 pub mod minidex {
