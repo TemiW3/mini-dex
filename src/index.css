@@ -130,6 +130,19 @@ code {
   @apply flex items-center space-x-3 p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200;
 }
 
+/* Token image fallback styling */
+.token-image-fallback {
+  @apply bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs rounded-full;
+}
+
+/* Token icon styling */
+.token-icon {
+  @apply flex items-center justify-center text-white font-bold rounded-full shadow-lg;
+  font-size: 0.75rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+}
+
 .token-selector:hover {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
 }

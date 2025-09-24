@@ -16,7 +16,7 @@ export function getMinidexProgramId(cluster: SolanaClusterId) {
     case 'solana:devnet':
     case 'solana:testnet':
       // This is the program ID for the Minidex program on devnet and testnet.
-      return address('6z68wfurCMYkZG51s1Et9BJEd9nJGUusjHXNt4dGbNNF')
+      return address('5hLC8bG9NicQQLHyByQxfoW6n8TjiHqpy3sHURkyUxPW')
     case 'solana:mainnet':
     default:
       return MINIDEX_PROGRAM_ADDRESS

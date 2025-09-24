@@ -10,36 +10,43 @@ export const TOKENS: Token[] = [
       'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
   },
   {
-    mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-    symbol: 'USDC',
-    name: 'USD Coin',
+    mint: '2RBxqb1yVPyWSK4DjZjprtserYo2fmTTRoPf8Yhvxyfa',
+    symbol: 'TUSDC',
+    name: 'TestUSDC',
     decimals: 6,
     logoURI:
       'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png',
   },
   {
-    mint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
-    symbol: 'RAY',
-    name: 'Raydium',
+    mint: '8yHJmmnMjcwCCrLtDKMkJV4n6hvyDoN5WFk9ge2HjQQo',
+    symbol: 'TUSDT',
+    name: 'TestUSDT',
     decimals: 6,
-    logoURI:
-      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R/logo.png',
+    logoURI: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
   },
   {
-    mint: 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',
-    symbol: 'ORCA',
-    name: 'Orca',
-    decimals: 6,
+    mint: '3LppUQ8uRDDyMJ3TnjJkzTv3qSKY7o5JrFNhSynXGNhC',
+    symbol: 'TBTC',
+    name: 'TestBTC',
+    decimals: 8,
     logoURI:
-      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE/logo.png',
+      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E/logo.png',
   },
   {
-    mint: 'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt',
-    symbol: 'SRM',
-    name: 'Serum',
-    decimals: 6,
+    mint: 'EbPVsgeyPnkn5Zu3PruQpzkHPdRGXifbKp29h8ModgXL',
+    symbol: 'TETH',
+    name: 'TestETH',
+    decimals: 8,
     logoURI:
-      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt/logo.png',
+      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk/logo.png',
+  },
+  {
+    mint: 'Bqqn5Z8mnu8qmqTJz53L1PH83xQyE4omBFXZ7MYeSNvo',
+    symbol: 'MDX',
+    name: 'MyDexToken',
+    decimals: 9,
+    logoURI:
+      'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
   },
 ]
 

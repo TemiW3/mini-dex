@@ -34,12 +34,18 @@ const SwapInterface: React.FC = () => {
     if (!amountA || parseFloat(amountA) <= 0) return
 
     try {
-      const inputAmount = parseFloat(amountA) * Math.pow(10, tokenA.decimals)
-      const result = await calculateSwapOutput(tokenA.mint, tokenB.mint, inputAmount, true)
+      const inputAmount = parseFloat(amountA)
+      const result = await calculateSwapOutput(
+        tokenA.mint,
+        tokenB.mint,
+        inputAmount,
+        true,
+        tokenA.decimals,
+        tokenB.decimals,
+      )
 
       if (result) {
-        const outputAmount = result.outputAmount / Math.pow(10, tokenB.decimals)
-        setAmountB(outputAmount.toFixed(tokenB.decimals))
+        setAmountB(result.outputAmount.toFixed(tokenB.decimals))
         setPriceImpact(result.priceImpact)
       }
     } catch (error) {
@@ -57,10 +63,18 @@ const SwapInterface: React.FC = () => {
 
     setIsLoading(true)
     try {
-      const inputAmount = parseFloat(amountA) * Math.pow(10, tokenA.decimals)
-      const minOutputAmount = parseFloat(amountB) * Math.pow(10, tokenB.decimals) * (1 - slippage / 100)
+      const inputAmount = parseFloat(amountA)
+      const minOutputAmount = parseFloat(amountB) * (1 - slippage / 100)
 
-      const signature = await executeSwap(tokenA.mint, tokenB.mint, inputAmount, minOutputAmount, true)
+      const signature = await executeSwap(
+        tokenA.mint,
+        tokenB.mint,
+        inputAmount,
+        minOutputAmount,
+        true,
+        tokenA.decimals,
+        tokenB.decimals,
+      )
 
       if (signature) {
         alert(`Swap successful! Transaction: ${signature}`)
