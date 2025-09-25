@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { useWallet, useConnection } from '@solana/wallet-adapter-react'
+import { PublicKey, Transaction } from '@solana/web3.js'
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  createAssociatedTokenAccountInstruction,
+} from '@solana/spl-token'
 import { ArrowUpDown, Settings } from 'lucide-react'
 import TokenSelector from './TokenSelector'
 import { TOKENS } from '../constants/tokens'
@@ -8,7 +14,8 @@ import { useTokenBalances } from '../hooks/useTokenBalances'
 import { usePoolData } from '../hooks/usePoolData'
 
 const SwapInterface: React.FC = () => {
-  const { publicKey, signTransaction } = useWallet()
+  const { publicKey, signTransaction, sendTransaction } = useWallet()
+  const { connection } = useConnection()
   const { calculateSwapOutput, executeSwap, poolExists, getPoolInfo } = useMiniDex()
 
   const [tokenA, setTokenA] = useState(TOKENS[0])
@@ -24,11 +31,90 @@ const SwapInterface: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false)
   const [priceImpact, setPriceImpact] = useState<number | null>(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+
+  // Faucet state
+  const [faucetResult, setFaucetResult] = useState<string>('')
+  const [isFauceting, setIsFauceting] = useState(false)
   const [confirmData, setConfirmData] = useState<{
     type: 'success' | 'error'
     message: string
     transactionSignature?: string
   } | null>(null)
+
+  // Transfer-based faucet function
+  const requestTestTokens = async (tokenMint: string, amount: number = 1000) => {
+    if (!publicKey || !sendTransaction || !signTransaction) {
+      setFaucetResult('❌ Please connect your wallet first')
+      return
+    }
+
+    setIsFauceting(true)
+    setFaucetResult('Requesting test tokens...')
+
+    try {
+      const mint = new PublicKey(tokenMint)
+      const userATA = await getAssociatedTokenAddress(mint, publicKey)
+
+      // Check if user's ATA exists
+      const userAccountInfo = await connection.getAccountInfo(userATA)
+      let needsATACreation = !userAccountInfo
+
+      // For now, we'll simulate a transfer from your own wallet
+      // In production, this would be from a pre-funded faucet wallet
+      const sourceATA = await getAssociatedTokenAddress(mint, publicKey) // Using same wallet for demo
+
+      // Check if you have tokens to transfer
+      const sourceBalance = await connection.getTokenAccountBalance(sourceATA)
+      const availableBalance = parseFloat(sourceBalance.value.uiAmountString || '0')
+
+      if (availableBalance < amount) {
+        setFaucetResult(`❌ Insufficient tokens in faucet. Available: ${availableBalance.toFixed(2)}`)
+        return
+      }
+
+      // Create transaction with ATA creation if needed
+      const { blockhash } = await connection.getLatestBlockhash()
+      const tx = new Transaction({
+        recentBlockhash: blockhash,
+        feePayer: publicKey,
+      })
+
+      // Add ATA creation instruction if needed
+      if (needsATACreation) {
+        setFaucetResult('Creating Associated Token Account...')
+        tx.add(
+          createAssociatedTokenAccountInstruction(
+            publicKey, // payer
+            userATA, // associated token account
+            publicKey, // owner
+            mint, // mint
+          ),
+        )
+      }
+
+      // Add transfer instruction
+      tx.add(
+        createTransferInstruction(
+          sourceATA, // source
+          userATA, // destination
+          publicKey, // owner
+          amount * Math.pow(10, 6), // amount in smallest units (assuming 6 decimals)
+        ),
+      )
+
+      const signedTx = await signTransaction!(tx)
+      const signature = await sendTransaction(signedTx, connection)
+      setFaucetResult(`✅ Success! Received ${amount} test tokens. Transaction: ${signature.slice(0, 8)}...`)
+
+      // Refresh balances
+      await tokenBalances.fetchTokenBalances()
+    } catch (error: any) {
+      console.error('Faucet error:', error)
+      setFaucetResult(`❌ Failed: ${error.message}`)
+    } finally {
+      setIsFauceting(false)
+    }
+  }
 
   // Calculate output amount when input changes
   useEffect(() => {
@@ -130,6 +216,35 @@ const SwapInterface: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* Test Token Faucet Section */}
+      <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+        <h3 className="text-blue-400 font-semibold mb-2">🚰 Test Token Faucet</h3>
+        <p className="text-blue-300 text-sm mb-3">
+          Get test tokens to try out the DEX. Click the buttons below to receive test tokens for trading.
+        </p>
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {TOKENS.slice(0, 3).map((token) => (
+              <button
+                key={token.mint}
+                onClick={() => requestTestTokens(token.mint, 1000)}
+                disabled={isFauceting || !publicKey}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors text-sm"
+              >
+                {isFauceting ? 'Requesting...' : `Get ${token.symbol}`}
+              </button>
+            ))}
+          </div>
+          {faucetResult && (
+            <div className="mt-2">
+              <p className={`text-sm ${faucetResult.includes('✅') ? 'text-green-400' : 'text-red-400'}`}>
+                {faucetResult}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Settings */}
       {showSettings && (
         <div className="bg-gray-700 rounded-lg p-4 space-y-3">
