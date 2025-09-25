@@ -39,7 +39,6 @@ const PoolStats: React.FC = () => {
 
       // Get all existing pools from the blockchain
       const existingPools = await listExistingPools()
-      console.log('Found existing pools:', existingPools.length)
 
       // Process each existing pool
       for (const pool of existingPools) {
@@ -95,12 +94,9 @@ const PoolStats: React.FC = () => {
             }
 
             discoveredPools.push(poolData)
-            console.log(`Added pool: ${tokenA.symbol}/${tokenB.symbol}`)
-          } else {
-            console.log(`Skipping pool with unknown tokens: ${tokenAMint}/${tokenBMint}`)
           }
         } catch (error) {
-          console.error('Error processing pool:', error)
+          // Skip pools that can't be processed
         }
       }
 
@@ -108,9 +104,8 @@ const PoolStats: React.FC = () => {
       if (discoveredPools.length > 0) {
         setSelectedPool(`${discoveredPools[0].tokenA}-${discoveredPools[0].tokenB}`)
       }
-      console.log(`Total pools loaded: ${discoveredPools.length}`)
     } catch (error) {
-      console.error('Error loading pool data:', error)
+      // Handle error silently
     } finally {
       setLoading(false)
     }

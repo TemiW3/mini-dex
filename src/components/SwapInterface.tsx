@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { PublicKey, Transaction } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
+import { getAssociatedTokenAddress } from '@solana/spl-token'
 import { ArrowUpDown, Settings } from 'lucide-react'
 import TokenSelector from './TokenSelector'
 import { TOKENS } from '../constants/tokens'
@@ -19,6 +20,89 @@ const SwapInterface: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [priceImpact, setPriceImpact] = useState<number | null>(null)
+  const [tokenABalance, setTokenABalance] = useState<number>(0)
+  const [tokenBBalance, setTokenBBalance] = useState<number>(0)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [confirmData, setConfirmData] = useState<{
+    type: 'success' | 'error'
+    message: string
+    transactionSignature?: string
+  } | null>(null)
+
+  // Function to fetch token balances
+  const fetchTokenBalances = async () => {
+    if (!publicKey) {
+      setTokenABalance(0)
+      setTokenBBalance(0)
+      return
+    }
+
+    try {
+      // Fetch Token A balance
+      if (tokenA.mint === 'So11111111111111111111111111111111111111112') {
+        // SOL balance (native + wrapped)
+        const nativeSolBalance = await connection.getBalance(publicKey)
+        const nativeSol = nativeSolBalance / 1e9 // Convert lamports to SOL
+
+        // Get wrapped SOL balance
+        const wrappedSolAccount = await getAssociatedTokenAddress(new PublicKey(tokenA.mint), publicKey)
+        let wrappedSol = 0
+        try {
+          const wrappedSolBalanceInfo = await connection.getTokenAccountBalance(wrappedSolAccount)
+          wrappedSol = parseFloat(wrappedSolBalanceInfo.value.uiAmountString || '0')
+        } catch (error) {
+          // Wrapped SOL account doesn't exist, wrapped balance is 0
+        }
+
+        setTokenABalance(nativeSol + wrappedSol)
+      } else {
+        // Token balance
+        const tokenAAccount = await getAssociatedTokenAddress(new PublicKey(tokenA.mint), publicKey)
+        try {
+          const tokenABalanceInfo = await connection.getTokenAccountBalance(tokenAAccount)
+          setTokenABalance(parseFloat(tokenABalanceInfo.value.uiAmountString || '0'))
+        } catch (error) {
+          setTokenABalance(0)
+        }
+      }
+
+      // Fetch Token B balance
+      if (tokenB.mint === 'So11111111111111111111111111111111111111112') {
+        // SOL balance (native + wrapped)
+        const nativeSolBalance = await connection.getBalance(publicKey)
+        const nativeSol = nativeSolBalance / 1e9 // Convert lamports to SOL
+
+        // Get wrapped SOL balance
+        const wrappedSolAccount = await getAssociatedTokenAddress(new PublicKey(tokenB.mint), publicKey)
+        let wrappedSol = 0
+        try {
+          const wrappedSolBalanceInfo = await connection.getTokenAccountBalance(wrappedSolAccount)
+          wrappedSol = parseFloat(wrappedSolBalanceInfo.value.uiAmountString || '0')
+        } catch (error) {
+          // Wrapped SOL account doesn't exist, wrapped balance is 0
+        }
+
+        setTokenBBalance(nativeSol + wrappedSol)
+      } else {
+        // Token balance
+        const tokenBAccount = await getAssociatedTokenAddress(new PublicKey(tokenB.mint), publicKey)
+        try {
+          const tokenBBalanceInfo = await connection.getTokenAccountBalance(tokenBAccount)
+          setTokenBBalance(parseFloat(tokenBBalanceInfo.value.uiAmountString || '0'))
+        } catch (error) {
+          setTokenBBalance(0)
+        }
+      }
+    } catch (error) {
+      setTokenABalance(0)
+      setTokenBBalance(0)
+    }
+  }
+
+  // Fetch balances when wallet or tokens change
+  useEffect(() => {
+    fetchTokenBalances()
+  }, [publicKey, tokenA.mint, tokenB.mint])
 
   // Calculate output amount when input changes
   useEffect(() => {
@@ -57,7 +141,11 @@ const SwapInterface: React.FC = () => {
 
   const handleSwap = async () => {
     if (!publicKey || !signTransaction || !amountA || !amountB) {
-      alert('Please connect your wallet and enter amounts')
+      setConfirmData({
+        type: 'error',
+        message: 'Please connect your wallet and enter amounts',
+      })
+      setShowConfirmModal(true)
       return
     }
 
@@ -77,14 +165,24 @@ const SwapInterface: React.FC = () => {
       )
 
       if (signature) {
-        alert(`Swap successful! Transaction: ${signature}`)
+        setConfirmData({
+          type: 'success',
+          message: 'Swap completed successfully!',
+          transactionSignature: signature,
+        })
+        setShowConfirmModal(true)
         setAmountA('')
         setAmountB('')
         setPriceImpact(null)
+        // Refresh balances after successful swap
+        await fetchTokenBalances()
       }
     } catch (error) {
-      console.error('Swap failed:', error)
-      alert('Swap failed. Please try again.')
+      setConfirmData({
+        type: 'error',
+        message: `Swap failed: ${error instanceof Error ? error.message : 'Please try again.'}`,
+      })
+      setShowConfirmModal(true)
     } finally {
       setIsLoading(false)
     }
@@ -162,7 +260,7 @@ const SwapInterface: React.FC = () => {
             <TokenSelector selectedToken={tokenA} onTokenSelect={setTokenA} excludeToken={tokenB} />
           </div>
           <div className="text-sm text-gray-400">
-            Balance: {tokenA.balance?.toFixed(4) || '0.0000'} {tokenA.symbol}
+            Balance: {tokenABalance.toFixed(4)} {tokenA.symbol}
           </div>
         </div>
       </div>
@@ -192,7 +290,7 @@ const SwapInterface: React.FC = () => {
             <TokenSelector selectedToken={tokenB} onTokenSelect={setTokenB} excludeToken={tokenA} />
           </div>
           <div className="text-sm text-gray-400">
-            Balance: {tokenB.balance?.toFixed(4) || '0.0000'} {tokenB.symbol}
+            Balance: {tokenBBalance.toFixed(4)} {tokenB.symbol}
           </div>
         </div>
       </div>
@@ -237,6 +335,74 @@ const SwapInterface: React.FC = () => {
           <p className="text-sm">
             ⚠️ High price impact ({priceImpact.toFixed(2)}%). You may lose a significant portion of your tokens.
           </p>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && confirmData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl border border-gray-600 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Success State */}
+            {confirmData && confirmData.type === 'success' ? (
+              <div className="p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-white text-center mb-4">Swap Successful!</h3>
+                <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-6">
+                  <p className="text-green-300 text-sm mb-3">
+                    Your token swap has been completed successfully. The transaction has been confirmed on the
+                    blockchain.
+                  </p>
+                  {confirmData && confirmData.transactionSignature && (
+                    <div className="mt-3">
+                      <p className="text-green-400 text-xs font-semibold mb-1">Transaction Signature:</p>
+                      <p className="text-green-300 text-xs font-mono break-all">
+                        {confirmData && confirmData.transactionSignature}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false)
+                    setConfirmData(null)
+                  }}
+                  className="w-full dex-button dex-button-success py-3"
+                >
+                  Continue
+                </button>
+              </div>
+            ) : (
+              /* Error State */
+              <div className="p-6">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-white text-center mb-4">Swap Failed</h3>
+                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
+                  <p className="text-red-300 text-sm">{confirmData && confirmData.message}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false)
+                    setConfirmData(null)
+                  }}
+                  className="w-full dex-button dex-button-secondary py-3"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
