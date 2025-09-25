@@ -1,108 +1,34 @@
 import React, { useState, useEffect } from 'react'
-import { useWallet, useConnection } from '@solana/wallet-adapter-react'
-import { PublicKey } from '@solana/web3.js'
-import { getAssociatedTokenAddress } from '@solana/spl-token'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { ArrowUpDown, Settings } from 'lucide-react'
 import TokenSelector from './TokenSelector'
 import { TOKENS } from '../constants/tokens'
 import { useMiniDex } from '../hooks/useMiniDex'
+import { useTokenBalances } from '../hooks/useTokenBalances'
+import { usePoolData } from '../hooks/usePoolData'
 
 const SwapInterface: React.FC = () => {
   const { publicKey, signTransaction } = useWallet()
-  const { connection } = useConnection()
-  const { calculateSwapOutput, executeSwap } = useMiniDex()
+  const { calculateSwapOutput, executeSwap, poolExists, getPoolInfo } = useMiniDex()
 
   const [tokenA, setTokenA] = useState(TOKENS[0])
   const [tokenB, setTokenB] = useState(TOKENS[1])
+
+  // Use custom hooks for token balances and pool data
+  const poolData = usePoolData(tokenA, tokenB, poolExists, getPoolInfo)
+  const tokenBalances = useTokenBalances(tokenA, tokenB, poolData.poolExistsState, getPoolInfo)
   const [amountA, setAmountA] = useState('')
   const [amountB, setAmountB] = useState('')
   const [slippage, setSlippage] = useState(1.0) // 1% default slippage
   const [isLoading, setIsLoading] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [priceImpact, setPriceImpact] = useState<number | null>(null)
-  const [tokenABalance, setTokenABalance] = useState<number>(0)
-  const [tokenBBalance, setTokenBBalance] = useState<number>(0)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [confirmData, setConfirmData] = useState<{
     type: 'success' | 'error'
     message: string
     transactionSignature?: string
   } | null>(null)
-
-  // Function to fetch token balances
-  const fetchTokenBalances = async () => {
-    if (!publicKey) {
-      setTokenABalance(0)
-      setTokenBBalance(0)
-      return
-    }
-
-    try {
-      // Fetch Token A balance
-      if (tokenA.mint === 'So11111111111111111111111111111111111111112') {
-        // SOL balance (native + wrapped)
-        const nativeSolBalance = await connection.getBalance(publicKey)
-        const nativeSol = nativeSolBalance / 1e9 // Convert lamports to SOL
-
-        // Get wrapped SOL balance
-        const wrappedSolAccount = await getAssociatedTokenAddress(new PublicKey(tokenA.mint), publicKey)
-        let wrappedSol = 0
-        try {
-          const wrappedSolBalanceInfo = await connection.getTokenAccountBalance(wrappedSolAccount)
-          wrappedSol = parseFloat(wrappedSolBalanceInfo.value.uiAmountString || '0')
-        } catch (error) {
-          // Wrapped SOL account doesn't exist, wrapped balance is 0
-        }
-
-        setTokenABalance(nativeSol + wrappedSol)
-      } else {
-        // Token balance
-        const tokenAAccount = await getAssociatedTokenAddress(new PublicKey(tokenA.mint), publicKey)
-        try {
-          const tokenABalanceInfo = await connection.getTokenAccountBalance(tokenAAccount)
-          setTokenABalance(parseFloat(tokenABalanceInfo.value.uiAmountString || '0'))
-        } catch (error) {
-          setTokenABalance(0)
-        }
-      }
-
-      // Fetch Token B balance
-      if (tokenB.mint === 'So11111111111111111111111111111111111111112') {
-        // SOL balance (native + wrapped)
-        const nativeSolBalance = await connection.getBalance(publicKey)
-        const nativeSol = nativeSolBalance / 1e9 // Convert lamports to SOL
-
-        // Get wrapped SOL balance
-        const wrappedSolAccount = await getAssociatedTokenAddress(new PublicKey(tokenB.mint), publicKey)
-        let wrappedSol = 0
-        try {
-          const wrappedSolBalanceInfo = await connection.getTokenAccountBalance(wrappedSolAccount)
-          wrappedSol = parseFloat(wrappedSolBalanceInfo.value.uiAmountString || '0')
-        } catch (error) {
-          // Wrapped SOL account doesn't exist, wrapped balance is 0
-        }
-
-        setTokenBBalance(nativeSol + wrappedSol)
-      } else {
-        // Token balance
-        const tokenBAccount = await getAssociatedTokenAddress(new PublicKey(tokenB.mint), publicKey)
-        try {
-          const tokenBBalanceInfo = await connection.getTokenAccountBalance(tokenBAccount)
-          setTokenBBalance(parseFloat(tokenBBalanceInfo.value.uiAmountString || '0'))
-        } catch (error) {
-          setTokenBBalance(0)
-        }
-      }
-    } catch (error) {
-      setTokenABalance(0)
-      setTokenBBalance(0)
-    }
-  }
-
-  // Fetch balances when wallet or tokens change
-  useEffect(() => {
-    fetchTokenBalances()
-  }, [publicKey, tokenA.mint, tokenB.mint])
 
   // Calculate output amount when input changes
   useEffect(() => {
@@ -175,7 +101,7 @@ const SwapInterface: React.FC = () => {
         setAmountB('')
         setPriceImpact(null)
         // Refresh balances after successful swap
-        await fetchTokenBalances()
+        await tokenBalances.fetchTokenBalances()
       }
     } catch (error) {
       setConfirmData({
@@ -260,7 +186,7 @@ const SwapInterface: React.FC = () => {
             <TokenSelector selectedToken={tokenA} onTokenSelect={setTokenA} excludeToken={tokenB} />
           </div>
           <div className="text-sm text-gray-400">
-            Balance: {tokenABalance.toFixed(4)} {tokenA.symbol}
+            Balance: {tokenBalances.tokenABalance.toFixed(4)} {tokenA.symbol}
           </div>
         </div>
       </div>
@@ -290,7 +216,7 @@ const SwapInterface: React.FC = () => {
             <TokenSelector selectedToken={tokenB} onTokenSelect={setTokenB} excludeToken={tokenA} />
           </div>
           <div className="text-sm text-gray-400">
-            Balance: {tokenBBalance.toFixed(4)} {tokenB.symbol}
+            Balance: {tokenBalances.tokenBBalance.toFixed(4)} {tokenB.symbol}
           </div>
         </div>
       </div>
