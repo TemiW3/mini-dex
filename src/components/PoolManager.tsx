@@ -34,6 +34,7 @@ const PoolManager: React.FC = () => {
   const [tokenBBalance, setTokenBBalance] = useState<number>(0)
   const [lpTokenBalance, setLpTokenBalance] = useState<number>(0)
   const [lpTokenSymbol, setLpTokenSymbol] = useState<string>('')
+  const [isTokenBManual, setIsTokenBManual] = useState<boolean>(false)
   const [poolRatio, setPoolRatio] = useState<{ ratio: number; tokenA: string; tokenB: string } | null>(null)
   const [ratioError, setRatioError] = useState<string>('')
   const [calculatedLpTokens, setCalculatedLpTokens] = useState<number>(0)
@@ -253,6 +254,22 @@ const PoolManager: React.FC = () => {
     }
   }, [amountA, amountB, poolRatio])
 
+  // Reset manual flag when tokens change or pool doesn't exist
+  useEffect(() => {
+    setIsTokenBManual(false)
+  }, [tokenA.mint, tokenB.mint, poolExistsState])
+
+  // Auto-populate Token B amount when Token A changes and pool ratio exists
+  useEffect(() => {
+    if (poolRatio && amountA && !isTokenBManual) {
+      const inputAmountA = parseFloat(amountA)
+      if (!isNaN(inputAmountA) && inputAmountA > 0) {
+        const calculatedAmountB = calculateTokenBAmount(inputAmountA)
+        setAmountB(calculatedAmountB.toFixed(6))
+      }
+    }
+  }, [amountA, poolRatio, isTokenBManual])
+
   // Calculate LP tokens when amounts change
   useEffect(() => {
     if (amountA && amountB && poolExistsState) {
@@ -266,6 +283,14 @@ const PoolManager: React.FC = () => {
       setActualAmounts(null)
     }
   }, [amountA, amountB, poolExistsState, tokenA.mint, tokenB.mint, getPoolInfo])
+
+  // Function to auto-calculate Token B amount based on Token A amount and pool ratio
+  const calculateTokenBAmount = (amountA: number) => {
+    if (!poolRatio || amountA <= 0) {
+      return 0
+    }
+    return amountA * poolRatio.ratio
+  }
 
   // Function to calculate LP tokens based on backend logic
   const calculateLpTokens = async (amountA: number, amountB: number) => {
@@ -790,17 +815,30 @@ const PoolManager: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-gray-300 text-sm font-medium mb-2 block">{tokenB.symbol} Amount</label>
+              <label className="text-gray-300 text-sm font-medium mb-2 block">
+                {tokenB.symbol} Amount
+                {poolRatio && amountA && !isTokenBManual && (
+                  <span className="text-blue-400 text-xs ml-2">(Auto-calculated)</span>
+                )}
+              </label>
               <input
                 type="number"
                 value={amountB}
-                onChange={(e) => setAmountB(e.target.value)}
-                className="dex-input"
-                placeholder="0.0"
+                onChange={(e) => {
+                  setAmountB(e.target.value)
+                  setIsTokenBManual(true)
+                }}
+                className={`dex-input ${poolRatio && amountA && !isTokenBManual ? 'border-blue-500 bg-blue-900/10' : ''}`}
+                placeholder={poolRatio ? 'Auto-calculated' : '0.0'}
                 step="any"
               />
               <p className="text-xs text-gray-400 mt-1">
                 Balance: {tokenBBalance.toFixed(4)} {tokenB.symbol}
+                {poolRatio && amountA && !isTokenBManual && (
+                  <span className="text-blue-400 block">
+                    Based on pool ratio: 1 {tokenA.symbol} = {poolRatio.ratio.toFixed(6)} {tokenB.symbol}
+                  </span>
+                )}
               </p>
             </div>
           </div>
