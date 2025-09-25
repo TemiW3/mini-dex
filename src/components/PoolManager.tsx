@@ -35,11 +35,9 @@ const PoolManager: React.FC = () => {
   const [tokenBBalance, setTokenBBalance] = useState<number>(0)
   const [lpTokenBalance, setLpTokenBalance] = useState<number>(0)
   const [lpTokenSymbol, setLpTokenSymbol] = useState<string>('')
-  const [isTokenBManual, setIsTokenBManual] = useState<boolean>(false)
   const [poolRatio, setPoolRatio] = useState<{ ratio: number; tokenA: string; tokenB: string } | null>(null)
   const [ratioError, setRatioError] = useState<string>('')
   const [calculatedLpTokens, setCalculatedLpTokens] = useState<number>(0)
-  const [actualAmounts, setActualAmounts] = useState<{ amountA: number; amountB: number } | null>(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [confirmData, setConfirmData] = useState<{
     inputAmountA: number
@@ -53,6 +51,7 @@ const PoolManager: React.FC = () => {
     Array<{ tokenA: (typeof TOKENS)[number]; tokenB: (typeof TOKENS)[number] }>
   >([])
   const [loadingPairs, setLoadingPairs] = useState<boolean>(false)
+  const [poolHasLiquidity, setPoolHasLiquidity] = useState<boolean>(false)
   const [deployerAddress, setDeployerAddress] = useState<string | null>(null)
   const [isCheckingDeployer, setIsCheckingDeployer] = useState(false)
 
@@ -185,13 +184,14 @@ const PoolManager: React.FC = () => {
     if (!poolExistsState || !tokenA.mint || !tokenB.mint) {
       setPoolRatio(null)
       setRatioError('')
+      setPoolHasLiquidity(false)
       return
     }
 
     try {
       const poolInfo = await getPoolInfo(tokenA.mint, tokenB.mint)
       if (poolInfo && poolInfo.reserveA > 0 && poolInfo.reserveB > 0) {
-        // Calculate the ratio (tokenB per tokenA)
+        // Pool has liquidity - calculate the ratio (tokenB per tokenA)
         const reserveA = poolInfo.reserveA / Math.pow(10, tokenA.decimals)
         const reserveB = poolInfo.reserveB / Math.pow(10, tokenB.decimals)
         const ratio = reserveB / reserveA
@@ -202,14 +202,18 @@ const PoolManager: React.FC = () => {
           tokenB: tokenB.symbol,
         })
         setRatioError('')
+        setPoolHasLiquidity(true)
       } else {
+        // Pool exists but has no liquidity - allow manual input
         setPoolRatio(null)
         setRatioError('')
+        setPoolHasLiquidity(false)
       }
     } catch (error) {
       console.error('Error fetching pool ratio:', error)
       setPoolRatio(null)
       setRatioError('')
+      setPoolHasLiquidity(false)
     }
   }
 
@@ -260,25 +264,20 @@ const PoolManager: React.FC = () => {
     }
   }, [amountA, amountB, poolRatio])
 
-  // Reset manual flag when tokens change or pool doesn't exist
+  // Auto-populate Token B amount when Token A changes and pool has liquidity
   useEffect(() => {
-    setIsTokenBManual(false)
-  }, [tokenA.mint, tokenB.mint, poolExistsState])
-
-  // Auto-populate Token B amount when Token A changes and pool ratio exists
-  useEffect(() => {
-    if (poolRatio && amountA && !isTokenBManual) {
+    if (poolHasLiquidity && poolRatio && amountA) {
       const inputAmountA = parseFloat(amountA)
       if (!isNaN(inputAmountA) && inputAmountA > 0) {
         const calculatedAmountB = calculateTokenBAmount(inputAmountA)
         setAmountB(calculatedAmountB.toFixed(6))
       }
     }
-  }, [amountA, poolRatio, isTokenBManual])
+  }, [amountA, poolRatio, poolHasLiquidity])
 
   // Calculate LP tokens when amounts change
   useEffect(() => {
-    if (amountA && amountB && poolExistsState) {
+    if (amountA && amountB) {
       const inputAmountA = parseFloat(amountA)
       const inputAmountB = parseFloat(amountB)
       if (!isNaN(inputAmountA) && !isNaN(inputAmountB) && inputAmountA > 0 && inputAmountB > 0) {
@@ -286,9 +285,8 @@ const PoolManager: React.FC = () => {
       }
     } else {
       setCalculatedLpTokens(0)
-      setActualAmounts(null)
     }
-  }, [amountA, amountB, poolExistsState, tokenA.mint, tokenB.mint, getPoolInfo])
+  }, [amountA, amountB, tokenA.mint, tokenB.mint, getPoolInfo])
 
   // Load existing pool pairs from chain for Add tab pair dropdown
   useEffect(() => {
@@ -314,13 +312,15 @@ const PoolManager: React.FC = () => {
         setExistingPairs(pairs)
 
         // If current selection isn't in pairs, and pairs exist, default to first
-        if (pairs.length > 0) {
+        // Only auto-select pairs for Add and Remove tabs, not Create tab
+        if (pairs.length > 0 && (activeTab === 'add' || activeTab === 'remove')) {
           const match = pairs.find((p) => p.tokenA.mint === tokenA.mint && p.tokenB.mint === tokenB.mint)
           if (!match) {
             setTokenA(pairs[0].tokenA)
             setTokenB(pairs[0].tokenB)
             setAmountA('')
             setAmountB('')
+            setLpTokens('')
           }
         }
       } catch (error) {
@@ -331,7 +331,19 @@ const PoolManager: React.FC = () => {
       }
     }
     loadPairs()
-  }, [listExistingPools, tokenA.mint, tokenB.mint])
+  }, [listExistingPools, tokenA.mint, tokenB.mint, activeTab])
+
+  // Reset token selection when switching to Create tab to allow free selection
+  useEffect(() => {
+    if (activeTab === 'create') {
+      // Reset to default tokens for Create tab
+      setTokenA(TOKENS[0])
+      setTokenB(TOKENS[1])
+      setAmountA('')
+      setAmountB('')
+      setLpTokens('')
+    }
+  }, [activeTab])
 
   // Function to auto-calculate Token B amount based on Token A amount and pool ratio
   const calculateTokenBAmount = (amountA: number) => {
@@ -343,18 +355,16 @@ const PoolManager: React.FC = () => {
 
   // Function to calculate LP tokens based on backend logic
   const calculateLpTokens = async (amountA: number, amountB: number) => {
-    if (!poolExistsState || amountA <= 0 || amountB <= 0) {
+    if (amountA <= 0 || amountB <= 0) {
       setCalculatedLpTokens(0)
-      setActualAmounts(null)
-      return { lpTokens: 0, actualAmountA: amountA, actualAmountB: amountB }
+      return { lpTokens: 0 }
     }
 
     try {
       const poolInfo = await getPoolInfo(tokenA.mint, tokenB.mint)
       if (!poolInfo) {
         setCalculatedLpTokens(0)
-        setActualAmounts(null)
-        return { lpTokens: 0, actualAmountA: amountA, actualAmountB: amountB }
+        return { lpTokens: 0 }
       }
 
       const MINIMUM_LIQUIDITY = 1000
@@ -362,8 +372,6 @@ const PoolManager: React.FC = () => {
       const amountBWithDecimals = amountB * Math.pow(10, tokenB.decimals)
 
       let lpTokens: number
-      let actualAmountA = amountA
-      let actualAmountB = amountB
 
       if (poolInfo.totalLpSupply === 0) {
         // New pool: LP = sqrt(amount_a * amount_b) - MINIMUM_LIQUIDITY
@@ -374,29 +382,18 @@ const PoolManager: React.FC = () => {
         const lpFromA = Math.floor((amountAWithDecimals * poolInfo.totalLpSupply) / poolInfo.reserveA)
         const lpFromB = Math.floor((amountBWithDecimals * poolInfo.totalLpSupply) / poolInfo.reserveB)
         lpTokens = Math.min(lpFromA, lpFromB)
-
-        // Calculate actual amounts that will be used (based on the limiting factor)
-        if (lpFromA < lpFromB) {
-          // Token A is limiting, adjust Token B amount
-          actualAmountB = (lpTokens * poolInfo.reserveB) / poolInfo.totalLpSupply / Math.pow(10, tokenB.decimals)
-        } else {
-          // Token B is limiting, adjust Token A amount
-          actualAmountA = (lpTokens * poolInfo.reserveA) / poolInfo.totalLpSupply / Math.pow(10, tokenA.decimals)
-        }
       }
 
       // Convert LP tokens back to human-readable format (6 decimals)
       const lpTokensHuman = lpTokens / Math.pow(10, 6)
 
       setCalculatedLpTokens(lpTokensHuman)
-      setActualAmounts({ amountA: actualAmountA, amountB: actualAmountB })
 
-      return { lpTokens: lpTokensHuman, actualAmountA, actualAmountB }
+      return { lpTokens: lpTokensHuman }
     } catch (error) {
       console.error('Error calculating LP tokens:', error)
       setCalculatedLpTokens(0)
-      setActualAmounts(null)
-      return { lpTokens: 0, actualAmountA: amountA, actualAmountB: amountB }
+      return { lpTokens: 0 }
     }
   }
 
@@ -525,8 +522,8 @@ const PoolManager: React.FC = () => {
       return
     }
 
-    // Get the actual amounts that will be used (based on backend logic)
-    const { actualAmountA, actualAmountB, lpTokens } = await calculateLpTokens(inputAmountA, inputAmountB)
+    // Get the LP tokens that will be received
+    const { lpTokens } = await calculateLpTokens(inputAmountA, inputAmountB)
 
     if (lpTokens <= 0) {
       alert('Calculated LP tokens is 0 or negative. Please check your amounts.')
@@ -536,12 +533,12 @@ const PoolManager: React.FC = () => {
     // Note: We don't need to validate ratio here since the backend calculation
     // already ensures the amounts are adjusted to maintain the pool ratio
 
-    // Show confirmation modal with actual amounts
+    // Show confirmation modal
     setConfirmData({
       inputAmountA,
       inputAmountB,
-      actualAmountA,
-      actualAmountB,
+      actualAmountA: inputAmountA,
+      actualAmountB: inputAmountB,
       lpTokens,
     })
     setShowConfirmModal(true)
@@ -562,8 +559,8 @@ const PoolManager: React.FC = () => {
       const signature = await addLiquidity(
         tokenA.mint,
         tokenB.mint,
-        confirmData.actualAmountA,
-        confirmData.actualAmountB,
+        confirmData.inputAmountA,
+        confirmData.inputAmountB,
         minLpTokens, // Minimum LP tokens with slippage protection
         tokenA.decimals,
         tokenB.decimals,
@@ -920,26 +917,33 @@ const PoolManager: React.FC = () => {
             <div>
               <label className="text-gray-300 text-sm font-medium mb-2 block">
                 {tokenB.symbol} Amount
-                {poolRatio && amountA && !isTokenBManual && (
+                {poolHasLiquidity ? (
                   <span className="text-blue-400 text-xs ml-2">(Auto-calculated)</span>
+                ) : (
+                  <span className="text-yellow-400 text-xs ml-2">(Set initial ratio)</span>
                 )}
               </label>
               <input
                 type="number"
                 value={amountB}
-                onChange={(e) => {
-                  setAmountB(e.target.value)
-                  setIsTokenBManual(true)
-                }}
-                className={`dex-input ${poolRatio && amountA && !isTokenBManual ? 'border-blue-500 bg-blue-900/10' : ''}`}
-                placeholder={poolRatio ? 'Auto-calculated' : '0.0'}
+                onChange={poolHasLiquidity ? undefined : (e) => setAmountB(e.target.value)}
+                readOnly={poolHasLiquidity}
+                className={`dex-input ${poolHasLiquidity ? 'border-blue-500 bg-blue-900/10 cursor-not-allowed' : 'border-yellow-500 bg-yellow-900/10'}`}
+                placeholder={
+                  poolHasLiquidity ? 'Auto-calculated based on pool ratio' : 'Set initial ratio for this pool'
+                }
                 step="any"
               />
               <p className="text-xs text-gray-400 mt-1">
                 Balance: {tokenBBalance.toFixed(4)} {tokenB.symbol}
-                {poolRatio && amountA && !isTokenBManual && (
+                {poolHasLiquidity && poolRatio && amountA && (
                   <span className="text-blue-400 block">
                     Based on pool ratio: 1 {tokenA.symbol} = {poolRatio.ratio.toFixed(6)} {tokenB.symbol}
+                  </span>
+                )}
+                {!poolHasLiquidity && (
+                  <span className="text-yellow-400 block">
+                    This pool has no liquidity yet. You can set the initial ratio.
                   </span>
                 )}
               </p>
@@ -947,7 +951,7 @@ const PoolManager: React.FC = () => {
           </div>
 
           {/* LP Token Balance Display */}
-          {poolExistsState && lpTokenSymbol && (
+          {lpTokenSymbol && (
             <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -963,7 +967,7 @@ const PoolManager: React.FC = () => {
           )}
 
           {/* Pool Ratio Information */}
-          {poolRatio && (
+          {poolHasLiquidity && poolRatio && (
             <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
               <h4 className="text-blue-400 font-semibold mb-2">Pool Ratio Information</h4>
               <p className="text-sm text-blue-300">
@@ -978,6 +982,19 @@ const PoolManager: React.FC = () => {
             </div>
           )}
 
+          {/* Initial Liquidity Information */}
+          {!poolHasLiquidity && (
+            <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+              <h4 className="text-yellow-400 font-semibold mb-2">Initial Liquidity</h4>
+              <p className="text-sm text-yellow-300">
+                This pool exists but has no liquidity yet. You can set the initial ratio by entering both token amounts.
+              </p>
+              <p className="text-xs text-yellow-400 mt-1">
+                The ratio you set will become the pool's initial price. Choose carefully!
+              </p>
+            </div>
+          )}
+
           {/* LP Token Calculation */}
           {calculatedLpTokens > 0 && (
             <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
@@ -987,26 +1004,6 @@ const PoolManager: React.FC = () => {
                   You will receive:{' '}
                   <span className="font-mono text-green-200">{calculatedLpTokens.toFixed(6)} LP tokens</span>
                 </p>
-                {actualAmounts &&
-                  (actualAmounts.amountA !== parseFloat(amountA) || actualAmounts.amountB !== parseFloat(amountB)) && (
-                    <div className="mt-3 pt-3 border-t border-green-500/20">
-                      <p className="text-xs text-green-400 mb-2">Amounts will be adjusted to maintain pool ratio:</p>
-                      <div className="space-y-1 text-sm">
-                        <p className="text-green-300">
-                          {tokenA.symbol}:{' '}
-                          <span className="font-mono">
-                            {parseFloat(amountA).toFixed(6)} → {actualAmounts.amountA.toFixed(6)}
-                          </span>
-                        </p>
-                        <p className="text-green-300">
-                          {tokenB.symbol}:{' '}
-                          <span className="font-mono">
-                            {parseFloat(amountB).toFixed(6)} → {actualAmounts.amountB.toFixed(6)}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  )}
               </div>
             </div>
           )}
@@ -1019,26 +1016,9 @@ const PoolManager: React.FC = () => {
             </div>
           )}
 
-          {/* Pool Status */}
-          {poolExistsState !== null && (
-            <div
-              className={`p-3 rounded-lg ${
-                poolExistsState
-                  ? 'bg-green-900/20 border border-green-500/30'
-                  : 'bg-yellow-900/20 border border-yellow-500/30'
-              }`}
-            >
-              <p className={`text-sm ${poolExistsState ? 'text-green-400' : 'text-yellow-400'}`}>
-                {poolExistsState
-                  ? '✅ Pool exists - You can add liquidity'
-                  : '⚠️ Pool does not exist - Create the pool first'}
-              </p>
-            </div>
-          )}
-
           <button
             onClick={handleAddLiquidity}
-            disabled={!publicKey || !amountA || !amountB || isLoading || !poolExistsState || calculatedLpTokens <= 0}
+            disabled={!publicKey || !amountA || !amountB || isLoading || calculatedLpTokens <= 0}
             className="w-full dex-button dex-button-success py-3"
           >
             {isLoading ? (
@@ -1059,22 +1039,67 @@ const PoolManager: React.FC = () => {
       {activeTab === 'remove' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="grid grid-cols-2 gap-4 flex-1">
-              <div>
-                <label className="text-gray-300 text-sm font-medium mb-2 block">Token A</label>
-                <TokenSelector selectedToken={tokenA} onTokenSelect={setTokenA} excludeToken={tokenB} />
-              </div>
-              <div>
-                <label className="text-gray-300 text-sm font-medium mb-2 block">Token B</label>
-                <TokenSelector selectedToken={tokenB} onTokenSelect={setTokenB} excludeToken={tokenA} />
+            <div className="flex-1">
+              <label className="text-gray-300 text-sm font-medium mb-2 block">Pair</label>
+              <div className="relative">
+                <select
+                  className="dex-input pr-10"
+                  value={existingPairs.findIndex((p) => p.tokenA.mint === tokenA.mint && p.tokenB.mint === tokenB.mint)}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value)
+                    if (!isNaN(idx) && existingPairs[idx]) {
+                      setTokenA(existingPairs[idx].tokenA)
+                      setTokenB(existingPairs[idx].tokenB)
+                      setLpTokens('')
+                    }
+                  }}
+                  disabled={loadingPairs || existingPairs.length === 0}
+                >
+                  {existingPairs.length === 0 ? (
+                    <option value={-1}>No initialized pools found</option>
+                  ) : (
+                    existingPairs.map((p, i) => (
+                      <option key={`${p.tokenA.mint}-${p.tokenB.mint}`} value={i}>
+                        {p.tokenA.symbol}/{p.tokenB.symbol}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {loadingPairs && (
+                  <div className="absolute inset-y-0 right-3 flex items-center">
+                    <div className="loading-spinner"></div>
+                  </div>
+                )}
               </div>
             </div>
             <button
-              onClick={fetchTokenBalances}
+              onClick={async () => {
+                await fetchTokenBalances()
+                // refresh pairs too
+                setLoadingPairs(true)
+                try {
+                  const pools = await listExistingPools()
+                  const pairs: Array<{ tokenA: (typeof TOKENS)[number]; tokenB: (typeof TOKENS)[number] }> = []
+                  for (const pool of pools) {
+                    const poolInfo = pool.account
+                    const tokenAMint = poolInfo.tokenAMint.toString()
+                    const tokenBMint = poolInfo.tokenBMint.toString()
+                    const a = TOKENS.find((t) => t.mint === tokenAMint)
+                    const b = TOKENS.find((t) => t.mint === tokenBMint)
+                    if (a && b) pairs.push({ tokenA: a, tokenB: b })
+                  }
+                  setExistingPairs(pairs)
+                } catch (_) {
+                  setExistingPairs([])
+                } finally {
+                  setLoadingPairs(false)
+                }
+              }}
               className="ml-4 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-              title="Refresh balances"
+              title="Refresh balances and pairs"
+              disabled={loadingPairs}
             >
-              <RefreshCw size={16} className="text-gray-300" />
+              <RefreshCw size={16} className={`text-gray-300 ${loadingPairs ? 'animate-spin' : ''}`} />
             </button>
           </div>
 
@@ -1098,7 +1123,7 @@ const PoolManager: React.FC = () => {
           </div>
 
           {/* LP Token Balance Display */}
-          {poolExistsState && lpTokenSymbol && (
+          {lpTokenSymbol && (
             <div>
               <label className="text-gray-300 text-sm font-medium mb-2 block">Your LP Tokens</label>
               <div className="bg-blue-700 rounded-lg p-3">
@@ -1130,7 +1155,7 @@ const PoolManager: React.FC = () => {
 
           <button
             onClick={handleRemoveLiquidity}
-            disabled={!publicKey || !lpTokens || isLoading || !poolExistsState}
+            disabled={!publicKey || !lpTokens || isLoading}
             className="w-full dex-button dex-button-warning py-3"
           >
             {isLoading ? (
@@ -1235,38 +1260,10 @@ const PoolManager: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-bold text-white text-center mb-4">Confirm Liquidity Addition</h3>
 
-                {/* Amount Adjustment Warning */}
-                {confirmData.actualAmountA !== confirmData.inputAmountA ||
-                confirmData.actualAmountB !== confirmData.inputAmountB ? (
-                  <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4 mb-4">
-                    <h4 className="text-yellow-400 font-semibold mb-2">⚠️ Amounts Will Be Adjusted</h4>
-                    <p className="text-yellow-300 text-sm mb-3">
-                      Your amounts don't match the pool ratio. The backend will adjust them to maintain the correct
-                      ratio:
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-yellow-300">You entered:</span>
-                        <span className="text-white font-mono">
-                          {confirmData.inputAmountA.toFixed(6)} {tokenA.symbol}, {confirmData.inputAmountB.toFixed(6)}{' '}
-                          {tokenB.symbol}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-yellow-300">Will be used:</span>
-                        <span className="text-white font-mono">
-                          {confirmData.actualAmountA.toFixed(6)} {tokenA.symbol}, {confirmData.actualAmountB.toFixed(6)}{' '}
-                          {tokenB.symbol}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
-                    <h4 className="text-blue-400 font-semibold mb-2">✅ Amounts Match Pool Ratio</h4>
-                    <p className="text-blue-300 text-sm">Your amounts match the current pool ratio perfectly.</p>
-                  </div>
-                )}
+                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
+                  <h4 className="text-blue-400 font-semibold mb-2">✅ Pool Ratio Maintained</h4>
+                  <p className="text-blue-300 text-sm">Your amounts maintain the correct pool ratio automatically.</p>
+                </div>
 
                 {/* Transaction Summary */}
                 <div className="bg-gray-700/50 rounded-lg p-4 mb-6">
