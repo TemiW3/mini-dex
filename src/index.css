@@ -94,6 +94,28 @@ code {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
+/* Hide number input arrows */
+.dex-input[type='number']::-webkit-outer-spin-button,
+.dex-input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dex-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Hide number input arrows for swap interface */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 /* Button styling */
 .dex-button {
   @apply px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;

@@ -20,12 +20,12 @@ const PoolPairSelector: React.FC<PoolPairSelectorProps> = ({
   onRefresh,
 }) => {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex-1">
-        <label className="text-gray-300 text-sm font-medium mb-2 block">Pair</label>
-        <div className="relative">
+    <div className="space-y-2">
+      <label className="text-gray-300 text-sm font-medium block">Pair</label>
+      <div className="flex items-center space-x-2">
+        <div className="flex-1 relative">
           <select
-            className="dex-input pr-10"
+            className="dex-input pr-10 w-full"
             value={existingPairs.findIndex((p) => p.tokenA.mint === tokenA.mint && p.tokenB.mint === tokenB.mint)}
             onChange={(e) => {
               const idx = parseInt(e.target.value)
@@ -51,15 +51,15 @@ const PoolPairSelector: React.FC<PoolPairSelectorProps> = ({
             </div>
           )}
         </div>
+        <button
+          onClick={onRefresh}
+          className="px-3 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center justify-center"
+          title="Refresh balances and pairs"
+          disabled={loadingPairs}
+        >
+          <RefreshCw size={16} className={`text-gray-300 ${loadingPairs ? 'animate-spin' : ''}`} />
+        </button>
       </div>
-      <button
-        onClick={onRefresh}
-        className="ml-4 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-        title="Refresh balances and pairs"
-        disabled={loadingPairs}
-      >
-        <RefreshCw size={16} className={`text-gray-300 ${loadingPairs ? 'animate-spin' : ''}`} />
-      </button>
     </div>
   )
 }
