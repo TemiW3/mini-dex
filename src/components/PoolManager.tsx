@@ -19,6 +19,7 @@ const PoolManager: React.FC = () => {
     removeLiquidity,
     poolExists,
     getPoolInfo,
+    listExistingPools,
   } = useMiniDex()
 
   const [activeTab, setActiveTab] = useState<'create' | 'add' | 'remove'>('add')
@@ -47,6 +48,11 @@ const PoolManager: React.FC = () => {
     actualAmountB: number
     lpTokens: number
   } | null>(null)
+  // Existing on-chain pool pairs for Add Liquidity pair selector
+  const [existingPairs, setExistingPairs] = useState<
+    Array<{ tokenA: (typeof TOKENS)[number]; tokenB: (typeof TOKENS)[number] }>
+  >([])
+  const [loadingPairs, setLoadingPairs] = useState<boolean>(false)
   const [deployerAddress, setDeployerAddress] = useState<string | null>(null)
   const [isCheckingDeployer, setIsCheckingDeployer] = useState(false)
 
@@ -283,6 +289,49 @@ const PoolManager: React.FC = () => {
       setActualAmounts(null)
     }
   }, [amountA, amountB, poolExistsState, tokenA.mint, tokenB.mint, getPoolInfo])
+
+  // Load existing pool pairs from chain for Add tab pair dropdown
+  useEffect(() => {
+    const loadPairs = async () => {
+      setLoadingPairs(true)
+      try {
+        const pools = await listExistingPools()
+        const pairs: Array<{ tokenA: (typeof TOKENS)[number]; tokenB: (typeof TOKENS)[number] }> = []
+
+        for (const pool of pools) {
+          const poolInfo = pool.account
+          const tokenAMint = poolInfo.tokenAMint.toString()
+          const tokenBMint = poolInfo.tokenBMint.toString()
+
+          const tokenA = TOKENS.find((t) => t.mint === tokenAMint)
+          const tokenB = TOKENS.find((t) => t.mint === tokenBMint)
+
+          if (tokenA && tokenB) {
+            pairs.push({ tokenA, tokenB })
+          }
+        }
+
+        setExistingPairs(pairs)
+
+        // If current selection isn't in pairs, and pairs exist, default to first
+        if (pairs.length > 0) {
+          const match = pairs.find((p) => p.tokenA.mint === tokenA.mint && p.tokenB.mint === tokenB.mint)
+          if (!match) {
+            setTokenA(pairs[0].tokenA)
+            setTokenB(pairs[0].tokenB)
+            setAmountA('')
+            setAmountB('')
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing pairs:', error)
+        setExistingPairs([])
+      } finally {
+        setLoadingPairs(false)
+      }
+    }
+    loadPairs()
+  }, [listExistingPools, tokenA.mint, tokenB.mint])
 
   // Function to auto-calculate Token B amount based on Token A amount and pool ratio
   const calculateTokenBAmount = (amountA: number) => {
@@ -779,22 +828,76 @@ const PoolManager: React.FC = () => {
       {activeTab === 'add' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="grid grid-cols-2 gap-4 flex-1">
-              <div>
-                <label className="text-gray-300 text-sm font-medium mb-2 block">Token A</label>
-                <TokenSelector selectedToken={tokenA} onTokenSelect={setTokenA} excludeToken={tokenB} />
-              </div>
-              <div>
-                <label className="text-gray-300 text-sm font-medium mb-2 block">Token B</label>
-                <TokenSelector selectedToken={tokenB} onTokenSelect={setTokenB} excludeToken={tokenA} />
+            <div className="flex-1">
+              <label className="text-gray-300 text-sm font-medium mb-2 block">Pair</label>
+              <div className="relative">
+                <select
+                  className="dex-input pr-10"
+                  value={existingPairs.findIndex((p) => p.tokenA.mint === tokenA.mint && p.tokenB.mint === tokenB.mint)}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value)
+                    if (!isNaN(idx) && existingPairs[idx]) {
+                      setTokenA(existingPairs[idx].tokenA)
+                      setTokenB(existingPairs[idx].tokenB)
+                      setAmountA('')
+                      setAmountB('')
+                    }
+                  }}
+                  disabled={loadingPairs || existingPairs.length === 0}
+                >
+                  {existingPairs.length === 0 ? (
+                    <option value={-1}>No initialized pools found</option>
+                  ) : (
+                    existingPairs.map((p, i) => (
+                      <option key={`${p.tokenA.mint}-${p.tokenB.mint}`} value={i}>
+                        {p.tokenA.symbol}/{p.tokenB.symbol}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {loadingPairs && (
+                  <div className="absolute inset-y-0 right-3 flex items-center">
+                    <div className="loading-spinner"></div>
+                  </div>
+                )}
               </div>
             </div>
             <button
-              onClick={fetchTokenBalances}
+              onClick={async () => {
+                // Refresh both balances and pairs
+                await fetchTokenBalances()
+
+                setLoadingPairs(true)
+                try {
+                  const pools = await listExistingPools()
+                  const pairs: Array<{ tokenA: (typeof TOKENS)[number]; tokenB: (typeof TOKENS)[number] }> = []
+
+                  for (const pool of pools) {
+                    const poolInfo = pool.account
+                    const tokenAMint = poolInfo.tokenAMint.toString()
+                    const tokenBMint = poolInfo.tokenBMint.toString()
+
+                    const tokenA = TOKENS.find((t) => t.mint === tokenAMint)
+                    const tokenB = TOKENS.find((t) => t.mint === tokenBMint)
+
+                    if (tokenA && tokenB) {
+                      pairs.push({ tokenA, tokenB })
+                    }
+                  }
+
+                  setExistingPairs(pairs)
+                } catch (error) {
+                  console.error('Error loading existing pairs:', error)
+                  setExistingPairs([])
+                } finally {
+                  setLoadingPairs(false)
+                }
+              }}
               className="ml-4 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-              title="Refresh balances"
+              title="Refresh balances and pairs"
+              disabled={loadingPairs}
             >
-              <RefreshCw size={16} className="text-gray-300" />
+              <RefreshCw size={16} className={`text-gray-300 ${loadingPairs ? 'animate-spin' : ''}`} />
             </button>
           </div>
 
