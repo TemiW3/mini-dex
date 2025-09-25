@@ -45,6 +45,30 @@ const PoolManager: React.FC = () => {
     actualAmountB: number
     lpTokens: number
   } | null>(null)
+  const [deployerAddress, setDeployerAddress] = useState<string | null>(null)
+  const [isCheckingDeployer, setIsCheckingDeployer] = useState(false)
+
+  // Check if current user can create pools
+  const canCreatePools = deployerAddress && publicKey?.toString() === deployerAddress
+
+  // Function to check if user can create pools
+  const checkPoolCreationPermission = async () => {
+    if (isCheckingDeployer) return
+
+    setIsCheckingDeployer(true)
+    try {
+      // SECURE APPROACH: Only allow the actual deployer to create pools
+      // For now, we'll use the known deployer address
+      // In production, you should implement proper authority checking in the Rust program
+      const knownDeployer = '5vvn1eC8WqXXmpyhQKRqzBA8Aov2ceMCWfrTbN1ugYrs'
+      setDeployerAddress(knownDeployer)
+    } catch (error) {
+      console.error('Error checking pool creation permission:', error)
+      setDeployerAddress(null) // Default to NOT allowing creation if we can't check
+    } finally {
+      setIsCheckingDeployer(false)
+    }
+  }
 
   // Function to fetch token balances
   const fetchTokenBalances = async () => {
@@ -169,6 +193,11 @@ const PoolManager: React.FC = () => {
       setRatioError('')
     }
   }
+
+  // Check pool creation permission when component mounts
+  useEffect(() => {
+    checkPoolCreationPermission()
+  }, [connection])
 
   // Check if pool exists when tokens change
   useEffect(() => {
@@ -324,6 +353,11 @@ const PoolManager: React.FC = () => {
   const handleCreatePool = async () => {
     if (!publicKey) {
       alert('Please connect your wallet')
+      return
+    }
+
+    if (!canCreatePools) {
+      alert('Only the DEX deployer can create pools')
       return
     }
 
@@ -535,17 +569,34 @@ const PoolManager: React.FC = () => {
     tab: 'create' | 'add' | 'remove'
     icon: React.ReactNode
     label: string
-  }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-        activeTab === tab ? 'bg-purple-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-      }`}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
-  )
+  }) => {
+    const isCreateTab = tab === 'create'
+    const isDisabled = isCreateTab && !canCreatePools
+
+    return (
+      <button
+        onClick={() => {
+          if (!isDisabled) {
+            setActiveTab(tab)
+          }
+        }}
+        disabled={isDisabled}
+        className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+          isDisabled
+            ? 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-50'
+            : activeTab === tab
+              ? 'bg-purple-600 text-white shadow-lg'
+              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+        }`}
+        title={isDisabled ? 'Only the DEX deployer can create pools' : ''}
+      >
+        {icon}
+        <span>{label}</span>
+        {isDisabled && <span className="text-xs">🔒</span>}
+        {isCreateTab && isCheckingDeployer && <span className="text-xs">⏳</span>}
+      </button>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -559,7 +610,42 @@ const PoolManager: React.FC = () => {
       {/* Create Pool Tab */}
       {activeTab === 'create' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          {/* Security Notice */}
+          {!canCreatePools && (
+            <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">🔒</span>
+                </div>
+                <div>
+                  <h3 className="text-red-300 font-semibold">Access Restricted</h3>
+                  <p className="text-red-400 text-sm">
+                    Only the DEX deployer can create new pools.
+                    {deployerAddress && (
+                      <span className="block mt-1">
+                        Deployer: <span className="font-mono text-xs">{deployerAddress}</span>
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {canCreatePools && (
+            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">✓</span>
+                </div>
+                <div>
+                  <h3 className="text-green-300 font-semibold">Deployer Access Granted</h3>
+                  <p className="text-green-400 text-sm">You have permission to create new pools as the DEX deployer.</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className={`grid grid-cols-2 gap-4 ${!canCreatePools ? 'opacity-50 pointer-events-none' : ''}`}>
             <div>
               <label className="text-gray-300 text-sm font-medium mb-2 block">Token A</label>
               <TokenSelector selectedToken={tokenA} onTokenSelect={setTokenA} excludeToken={tokenB} />
@@ -570,7 +656,7 @@ const PoolManager: React.FC = () => {
             </div>
           </div>
 
-          <div>
+          <div className={!canCreatePools ? 'opacity-50 pointer-events-none' : ''}>
             <label className="text-gray-300 text-sm font-medium mb-2 block">Fee Rate (basis points)</label>
             <input
               type="number"
@@ -580,6 +666,7 @@ const PoolManager: React.FC = () => {
               placeholder="30 (0.3%)"
               min="0"
               max="1000"
+              disabled={!canCreatePools}
             />
             <p className="text-xs text-gray-400 mt-1">1 basis point = 0.01%. Example: 30 = 0.3%, 100 = 1%</p>
           </div>
@@ -622,8 +709,10 @@ const PoolManager: React.FC = () => {
 
           <button
             onClick={handleCreatePool}
-            disabled={!publicKey || isLoading}
-            className="w-full dex-button dex-button-primary py-3"
+            disabled={!publicKey || isLoading || !canCreatePools}
+            className={`w-full py-3 ${
+              !canCreatePools ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'dex-button dex-button-primary'
+            }`}
           >
             {isLoading ? (
               <div className="flex items-center justify-center space-x-2">
