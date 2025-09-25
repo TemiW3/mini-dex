@@ -33,6 +33,7 @@ const PoolManager: React.FC = () => {
   const [tokenABalance, setTokenABalance] = useState<number>(0)
   const [tokenBBalance, setTokenBBalance] = useState<number>(0)
   const [lpTokenBalance, setLpTokenBalance] = useState<number>(0)
+  const [lpTokenSymbol, setLpTokenSymbol] = useState<string>('')
   const [poolRatio, setPoolRatio] = useState<{ ratio: number; tokenA: string; tokenB: string } | null>(null)
   const [ratioError, setRatioError] = useState<string>('')
   const [calculatedLpTokens, setCalculatedLpTokens] = useState<number>(0)
@@ -145,19 +146,30 @@ const PoolManager: React.FC = () => {
             try {
               const lpBalanceInfo = await connection.getTokenAccountBalance(lpTokenAccount)
               setLpTokenBalance(parseFloat(lpBalanceInfo.value.uiAmountString || '0'))
+              // Set LP token symbol (e.g., "SOL-TUSDC LP")
+              setLpTokenSymbol(`${tokenA.symbol}-${tokenB.symbol} LP`)
             } catch (error) {
               setLpTokenBalance(0)
+              setLpTokenSymbol('')
             }
+          } else {
+            setLpTokenBalance(0)
+            setLpTokenSymbol('')
           }
         } catch (error) {
           setLpTokenBalance(0)
+          setLpTokenSymbol('')
         }
+      } else {
+        setLpTokenBalance(0)
+        setLpTokenSymbol('')
       }
     } catch (error) {
       console.error('Error fetching token balances:', error)
       setTokenABalance(0)
       setTokenBBalance(0)
       setLpTokenBalance(0)
+      setLpTokenSymbol('')
     }
   }
 
@@ -793,6 +805,22 @@ const PoolManager: React.FC = () => {
             </div>
           </div>
 
+          {/* LP Token Balance Display */}
+          {poolExistsState && lpTokenSymbol && (
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-blue-300 font-semibold text-sm">Your LP Tokens</h4>
+                  <p className="text-blue-400 text-xs">Liquidity provider tokens for this pool</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-blue-300 font-bold text-lg">{lpTokenBalance.toFixed(6)}</p>
+                  <p className="text-blue-400 text-xs">{lpTokenSymbol}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Pool Ratio Information */}
           {poolRatio && (
             <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
@@ -927,6 +955,24 @@ const PoolManager: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* LP Token Balance Display */}
+          {poolExistsState && lpTokenSymbol && (
+            <div>
+              <label className="text-gray-300 text-sm font-medium mb-2 block">Your LP Tokens</label>
+              <div className="bg-blue-700 rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-300 font-semibold text-lg">{lpTokenBalance.toFixed(6)}</p>
+                    <p className="text-blue-400 text-xs">{lpTokenSymbol}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-blue-300 text-xs">Available to remove</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="text-gray-300 text-sm font-medium mb-2 block">LP Tokens to Remove</label>
