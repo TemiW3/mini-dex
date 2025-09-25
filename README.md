@@ -146,6 +146,69 @@ pnpm dev
 3. Monitor total volume and liquidity
 4. Track user activity
 
+## 🪙 Getting Test Tokens
+
+To interact with the Mini DEX, you'll need test tokens. Here's how to get them:
+
+### **Method 1: Solana Faucet (Recommended)**
+
+1. Visit the [Solana Faucet](https://faucet.solana.com/)
+2. Enter your wallet address
+3. Request SOL (you'll need this for transaction fees)
+
+### **Method 2: SPL Token Faucet**
+
+For test tokens, you can use the SPL Token Faucet:
+
+1. Visit [SPL Token Faucet](https://spl-token-faucet.com/)
+2. Enter your wallet address
+3. Select the token you want to mint
+4. Click "Get Tokens"
+
+### **Test Token Mint Addresses**
+
+| Token           | Symbol | Mint Address                                   | Decimals |
+| --------------- | ------ | ---------------------------------------------- | -------- |
+| **SOL**         | SOL    | `So11111111111111111111111111111111111111112`  | 9        |
+| **Test USDC**   | TUSDC  | `2RBxqb1yVPyWSK4DjZjprtserYo2fmTTRoPf8Yhvxyfa` | 6        |
+| **Test USDT**   | TUSDT  | `8yHJmmnMjcwCCrLtDKMkJV4n6hvyDoN5WFk9ge2HjQQo` | 6        |
+| **Test BTC**    | TBTC   | `3LppUQ8uRDDyMJ3TnjJkzTv3qSKY7o5JrFNhSynXGNhC` | 8        |
+| **Test ETH**    | TETH   | `EbPVsgeyPnkn5Zu3PruQpzkHPdRGXifbKp29h8ModgXL` | 8        |
+| **MyDex Token** | MDX    | `Bqqn5Z8mnu8qmqTJz53L1PH83xQyE4omBFXZ7MYeSNvo` | 9        |
+
+### **Manual Token Minting (Advanced)**
+
+If you need to create your own test tokens:
+
+```bash
+# Create a new SPL token
+spl-token create-token
+
+# Create token account
+spl-token create-account <TOKEN_MINT_ADDRESS>
+
+# Mint tokens to your account
+spl-token mint <TOKEN_MINT_ADDRESS> <AMOUNT>
+```
+
+### **Required Tokens for Testing**
+
+- **SOL**: For transaction fees and native swaps
+- **At least 2 different tokens**: To create liquidity pools and test swaps
+- **Recommended**: Get TUSDC, TUSDT, and MDX for comprehensive testing
+
+### **Token Balance Check**
+
+You can check your token balances in the DEX interface or using Solana CLI:
+
+```bash
+# Check SOL balance
+solana balance
+
+# Check SPL token balance
+spl-token balance <TOKEN_MINT_ADDRESS>
+```
+
 ## 🛠️ Development
 
 ### **Project Structure**
