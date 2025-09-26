@@ -28,37 +28,6 @@
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
-/* Button styling */
-.dex-button {
-  @apply px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
-}
-
-.dex-button-primary {
-  @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 hover:shadow-lg hover:-translate-y-0.5;
-}
-
-.dex-button-secondary {
-  @apply bg-gray-600 hover:bg-gray-700 border border-gray-500;
-}
-
-.dex-button-success {
-  @apply bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700;
-}
-
-.dex-button-warning {
-  @apply bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700;
-}
-
-/* Card hover effects */
-.dex-card {
-  transition: all 0.3s ease;
-}
-
-.dex-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
 /* Token selector styling */
 .token-selector {
   @apply flex items-center space-x-3 p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors duration-200;

@@ -51,3 +51,15 @@ export const TOKENS: Token[] = [
 ]
 
 export const PROGRAM_ID = '5hLC8bG9NicQQLHyByQxfoW6n8TjiHqpy3sHURkyUxPW'
+
+// Faucet wallet public key
+export const FAUCET_WALLET = 'AmGgPNYjpivRF4Przvwp71CesUuvKWFxTViuiwwguj8G'
+
+// Predetermined amounts for each token (in smallest units)
+export const FAUCET_AMOUNTS: Record<string, number> = {
+  '2RBxqb1yVPyWSK4DjZjprtserYo2fmTTRoPf8Yhvxyfa': 100, // 100 TUSDC
+  '8yHJmmnMjcwCCrLtDKMkJV4n6hvyDoN5WFk9ge2HjQQo': 100, // 100 TUSDT
+  '3LppUQ8uRDDyMJ3TnjJkzTv3qSKY7o5JrFNhSynXGNhC': 100, // 100 TBTC
+  EbPVsgeyPnkn5Zu3PruQpzkHPdRGXifbKp29h8ModgXL: 100, // 100 TETH
+  Bqqn5Z8mnu8qmqTJz53L1PH83xQyE4omBFXZ7MYeSNvo: 1000, // 1000 MDX
+}

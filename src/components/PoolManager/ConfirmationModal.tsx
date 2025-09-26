@@ -98,8 +98,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <h3 className="text-xl font-bold text-white text-center mb-4">Confirm Liquidity Addition</h3>
 
             <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
-              <h4 className="text-blue-400 font-semibold mb-2">✅ Pool Ratio Maintained</h4>
-              <p className="text-blue-300 text-sm">Your amounts maintain the correct pool ratio automatically.</p>
+              <h4 className="text-blue-400 font-semibold mb-2">📝 Transaction Signing Required</h4>
+              <p className="text-blue-300 text-sm">
+                You will need to sign 1-2 transactions: one to create your LP token account (if needed) and one to
+                transfer your tokens to the liquidity pool.
+              </p>
             </div>
 
             {/* Transaction Summary */}

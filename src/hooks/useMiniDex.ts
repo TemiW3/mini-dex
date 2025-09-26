@@ -6,6 +6,8 @@ import {
   getAssociatedTokenAddress,
   getOrCreateAssociatedTokenAccount,
   createSyncNativeInstruction,
+  createAssociatedTokenAccountInstruction,
+  NATIVE_MINT,
 } from '@solana/spl-token'
 import { Program, AnchorProvider, BN, Idl } from '@coral-xyz/anchor'
 import { PoolInfo, SwapResult } from '../types/token'
@@ -880,16 +882,68 @@ export const useMiniDex = () => {
         // Get pool data to find vault addresses
         const poolData = await (program.account as any).pool.fetch(poolPda)
 
-        // Get user's associated token accounts
-        const userTokenA = await getAssociatedTokenAddress(tokenA, publicKey)
-        const userTokenB = await getAssociatedTokenAddress(tokenB, publicKey)
+        // Handle SOL wrapping - if tokenA is SOL, use wSOL (wrapped SOL)
+        const isTokenASOL = tokenA.toString() === 'So11111111111111111111111111111111111111112'
+        const isTokenBSOL = tokenB.toString() === 'So11111111111111111111111111111111111111112'
 
-        const tx = await program.methods
-          .swapTokens(
-            new BN(amountIn * Math.pow(10, tokenInDecimals)),
-            new BN(minAmountOut * Math.pow(10, tokenOutDecimals)),
-            aToB,
+        const actualTokenA = isTokenASOL ? NATIVE_MINT : tokenA
+        const actualTokenB = isTokenBSOL ? NATIVE_MINT : tokenB
+
+        // Get user's associated token accounts
+        const userTokenA = await getAssociatedTokenAddress(actualTokenA, publicKey)
+        const userTokenB = await getAssociatedTokenAddress(actualTokenB, publicKey)
+
+        // Check if user has ATAs, create them if they don't exist
+        const userTokenAInfo = await connection.getAccountInfo(userTokenA)
+        const userTokenBInfo = await connection.getAccountInfo(userTokenB)
+
+        const tx = new Transaction()
+
+        // Create ATA for token A if it doesn't exist
+        if (!userTokenAInfo) {
+          tx.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey, // payer
+              userTokenA, // associated token account
+              publicKey, // owner
+              actualTokenA, // mint (wSOL if SOL)
+            ),
           )
+        }
+
+        // Create ATA for token B if it doesn't exist
+        if (!userTokenBInfo) {
+          tx.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey, // payer
+              userTokenB, // associated token account
+              publicKey, // owner
+              actualTokenB, // mint (wSOL if SOL)
+            ),
+          )
+        }
+
+        // If swapping from SOL, wrap it first
+        if (isTokenASOL) {
+          // Transfer SOL to wSOL account
+          tx.add(
+            SystemProgram.transfer({
+              fromPubkey: publicKey,
+              toPubkey: userTokenA,
+              lamports: amountIn * LAMPORTS_PER_SOL,
+            }),
+          )
+
+          // Sync native instruction to update wSOL balance
+          tx.add(createSyncNativeInstruction(userTokenA))
+        }
+
+        // Add the swap instruction
+        const amountInWithDecimals = new BN(amountIn * Math.pow(10, tokenInDecimals))
+        const minAmountOutWithDecimals = new BN(minAmountOut * Math.pow(10, tokenOutDecimals))
+
+        const swapInstruction = await program.methods
+          .swapTokens(amountInWithDecimals, minAmountOutWithDecimals, aToB)
           .accounts({
             user: publicKey,
             pool: poolPda,
@@ -899,14 +953,25 @@ export const useMiniDex = () => {
             tokenBVault: poolData.tokenBVault,
             tokenProgram: TOKEN_PROGRAM_ID,
           })
-          .rpc()
+          .instruction()
 
-        return tx
+        tx.add(swapInstruction)
+
+        // Send the transaction
+        const { blockhash } = await connection.getLatestBlockhash()
+        tx.recentBlockhash = blockhash
+        tx.feePayer = publicKey
+
+        const signedTx = await signTransaction!(tx)
+        const serializedTx = signedTx.serialize()
+        const signature = await connection.sendRawTransaction(serializedTx)
+
+        return signature
       } catch (error) {
         throw error
       }
     },
-    [getProgram, publicKey, sendTransaction, getPoolAddress],
+    [getProgram, publicKey, sendTransaction, getPoolAddress, connection, signTransaction],
   )
 
   // Calculate swap output

@@ -1,10 +1,190 @@
-import React from 'react'
-import { useWallet } from '@solana/wallet-adapter-react'
+import React, { useState, useEffect } from 'react'
+import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { PublicKey, Transaction, Keypair } from '@solana/web3.js'
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  createAssociatedTokenAccountInstruction,
+} from '@solana/spl-token'
 import { Wallet, ArrowRightLeft, TrendingUp } from 'lucide-react'
+import { TOKENS, FAUCET_WALLET, FAUCET_AMOUNTS } from '../constants/tokens'
 
 const Home: React.FC = () => {
-  const { connected } = useWallet()
+  const { connected, publicKey, signTransaction } = useWallet()
+  const { connection } = useConnection()
+
+  // Get faucet keypair from environment variable
+  const getFaucetKeypair = () => {
+    const privateKey = import.meta.env.VITE_FAUCET_PRIVATE_KEY
+
+    if (!privateKey) {
+      throw new Error('Faucet private key not found in environment variables. Please check your .env file.')
+    }
+
+    // Convert JSON array to Uint8Array
+    const privateKeyBytes = new Uint8Array(JSON.parse(privateKey))
+    return Keypair.fromSecretKey(privateKeyBytes)
+  }
+
+  // Faucet state
+  const [faucetResult, setFaucetResult] = useState<string>('')
+  const [isFauceting, setIsFauceting] = useState(false)
+  const [faucetUsed, setFaucetUsed] = useState<Record<string, boolean>>({})
+
+  // Rate limiting functions
+  const checkFaucetEligibility = (tokenMint: string) => {
+    if (!publicKey) return false
+    const faucetKey = `faucet_used_${tokenMint}_${publicKey.toString()}`
+    return !localStorage.getItem(faucetKey)
+  }
+
+  const markFaucetAsUsed = (tokenMint: string) => {
+    if (!publicKey) return
+    const faucetKey = `faucet_used_${tokenMint}_${publicKey.toString()}`
+    localStorage.setItem(faucetKey, 'true')
+    setFaucetUsed((prev) => ({ ...prev, [tokenMint]: true }))
+  }
+
+  // Load existing faucet usage on component mount
+  useEffect(() => {
+    if (!publicKey) return
+
+    const usedTokens: Record<string, boolean> = {}
+    TOKENS.forEach((token) => {
+      const faucetKey = `faucet_used_${token.mint}_${publicKey.toString()}`
+      usedTokens[token.mint] = !!localStorage.getItem(faucetKey)
+    })
+    setFaucetUsed(usedTokens)
+  }, [publicKey])
+
+  // Transfer-based faucet function
+  const requestTestTokens = async (tokenMint: string) => {
+    if (!publicKey || !signTransaction) {
+      setFaucetResult('❌ Please connect your wallet first')
+      return
+    }
+
+    // Check if user has already used faucet for this token
+    if (!checkFaucetEligibility(tokenMint)) {
+      setFaucetResult('❌ You have already claimed tokens for this token')
+      return
+    }
+
+    setIsFauceting(true)
+    setFaucetResult('Requesting test tokens...')
+
+    try {
+      const mint = new PublicKey(tokenMint)
+      const userATA = await getAssociatedTokenAddress(mint, publicKey)
+
+      // Use faucet wallet as source
+      const sourceATA = await getAssociatedTokenAddress(mint, new PublicKey(FAUCET_WALLET))
+
+      // Get predetermined amount for this token
+      const amount = FAUCET_AMOUNTS[tokenMint] || 100
+
+      // Find token info to get decimals
+      const tokenInfo = TOKENS.find((t) => t.mint === tokenMint)
+      const decimals = tokenInfo?.decimals || 6
+
+      // Check faucet balance
+      const sourceBalance = await connection.getTokenAccountBalance(sourceATA)
+      const availableBalance = parseFloat(sourceBalance.value.uiAmountString || '0')
+
+      if (availableBalance < amount) {
+        setFaucetResult(`❌ Insufficient tokens in faucet. Available: ${availableBalance.toFixed(2)}`)
+        return
+      }
+
+      // Get faucet keypair
+      const faucetKeypair = getFaucetKeypair()
+
+      // Check if user needs ATA creation
+      const userAccountInfo = await connection.getAccountInfo(userATA)
+      let ataCreated = false
+
+      // Step 1: Create ATA if needed (separate transaction)
+      if (!userAccountInfo) {
+        setFaucetResult('Creating Associated Token Account...')
+
+        try {
+          const { blockhash: ataBlockhash } = await connection.getLatestBlockhash()
+          const ataTx = new Transaction({
+            recentBlockhash: ataBlockhash,
+            feePayer: publicKey, // User pays for ATA creation
+          })
+
+          ataTx.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey, // payer (user pays for ATA creation)
+              userATA, // associated token account
+              publicKey, // owner (user)
+              mint, // mint
+            ),
+          )
+
+          const signedAtaTx = await signTransaction!(ataTx)
+          const ataSerialized = signedAtaTx.serialize()
+          const ataSignature = await connection.sendRawTransaction(ataSerialized)
+
+          // Wait for ATA creation to confirm
+          await connection.confirmTransaction(ataSignature)
+          ataCreated = true
+          setFaucetResult('ATA created, transferring tokens...')
+        } catch (ataError: any) {
+          console.error('ATA creation error:', ataError)
+          setFaucetResult(`❌ ATA creation failed: ${ataError.message}`)
+          return
+        }
+      }
+
+      // Step 2: Transfer tokens (separate transaction)
+      setFaucetResult('Transferring tokens...')
+
+      let signature: string
+      try {
+        const { blockhash: transferBlockhash } = await connection.getLatestBlockhash()
+        const transferTx = new Transaction({
+          recentBlockhash: transferBlockhash,
+          feePayer: publicKey, // User pays for transaction fees
+        })
+
+        transferTx.add(
+          createTransferInstruction(
+            sourceATA, // source (faucet wallet)
+            userATA, // destination (user wallet)
+            faucetKeypair.publicKey, // owner (faucet wallet - must sign)
+            amount * Math.pow(10, decimals), // amount in smallest units
+          ),
+        )
+
+        // Sign with faucet first, then user
+        transferTx.partialSign(faucetKeypair)
+        const userSignedTx = await signTransaction!(transferTx)
+
+        // Use connection.sendRawTransaction instead of wallet adapter
+        const serializedTx = userSignedTx.serialize()
+        signature = await connection.sendRawTransaction(serializedTx)
+      } catch (transferError: any) {
+        console.error('Transfer error:', transferError)
+        setFaucetResult(`❌ Transfer failed: ${transferError.message}`)
+        return
+      }
+
+      // Mark as used
+      markFaucetAsUsed(tokenMint)
+
+      setFaucetResult(
+        `✅ Success! Received ${amount} test tokens. Transfer: ${signature.slice(0, 8)}...${ataCreated ? ' (ATA created)' : ''}`,
+      )
+    } catch (error: any) {
+      console.error('Faucet error:', error)
+      setFaucetResult(`❌ Failed: ${error.message}`)
+    } finally {
+      setIsFauceting(false)
+    }
+  }
 
   if (connected) {
     return (
@@ -14,6 +194,55 @@ const Home: React.FC = () => {
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-white mb-2">Mini DEX</h1>
             <p className="text-gray-300">Trade tokens seamlessly on Solana</p>
+          </div>
+
+          {/* Test Token Faucet Section */}
+          <div className="max-w-2xl mx-auto mb-12">
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+              <h3 className="text-blue-400 font-semibold mb-2 text-center">🚰 Test Token Faucet</h3>
+              <p className="text-blue-300 text-sm mb-4 text-center">
+                Get test tokens to try out the DEX. Click the buttons below to receive test tokens for trading.
+              </p>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {TOKENS.filter((token) => FAUCET_AMOUNTS[token.mint]).map((token) => {
+                    const amount = FAUCET_AMOUNTS[token.mint] || 100
+                    const isUsed = faucetUsed[token.mint]
+                    const isDisabled = isUsed || isFauceting || !publicKey
+
+                    return (
+                      <button
+                        key={token.mint}
+                        onClick={() => requestTestTokens(token.mint)}
+                        disabled={isDisabled}
+                        className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                          isUsed
+                            ? 'bg-green-600 text-white cursor-default'
+                            : isDisabled
+                              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        }`}
+                      >
+                        {isUsed
+                          ? `✅ ${token.symbol} claimed`
+                          : isFauceting
+                            ? 'Requesting...'
+                            : `Get ${amount} ${token.symbol}`}
+                      </button>
+                    )
+                  })}
+                </div>
+                {faucetResult && (
+                  <div className="mt-2">
+                    <p
+                      className={`text-sm text-center ${faucetResult.includes('✅') ? 'text-green-400' : 'text-red-400'}`}
+                    >
+                      {faucetResult}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
