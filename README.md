@@ -40,6 +40,14 @@ A fully functional decentralized exchange (DEX) built on Solana using Anchor fra
 - Secure transaction handling
 - Wallet connection management
 
+### 🚰 **Built-in Faucet System**
+
+- One-click test token distribution
+- One-time use rate limiting
+- Automatic ATA creation
+- Pre-determined token amounts
+- Instant token transfers
+
 ## 🏗️ Architecture
 
 ### **Smart Contract (Anchor Program)**
@@ -122,14 +130,19 @@ pnpm dev
 
 ## 📱 Usage
 
+### **Getting Started**
+
+1. **Connect your Solana wallet** (Phantom, Solflare, etc.)
+2. **Get test tokens** using the built-in faucet on the Home page
+3. **Get SOL** from the Solana faucet for transaction fees
+
 ### **Token Swapping**
 
-1. Connect your Solana wallet
-2. Navigate to the Swap page
-3. Select token pairs (SOL, TUSDC, TUSDT, TBTC, TETH, MDX)
-4. Enter swap amounts
-5. Review price impact and slippage
-6. Confirm transaction
+1. Navigate to the Swap page
+2. Select token pairs (SOL, TUSDC, TUSDT, TBTC, TETH, MDX)
+3. Enter swap amounts
+4. Review price impact and slippage
+5. Confirm transaction
 
 ### **Liquidity Management**
 
@@ -148,66 +161,49 @@ pnpm dev
 
 ## 🪙 Getting Test Tokens
 
-To interact with the Mini DEX, you'll need test tokens. Here's how to get them:
+To interact with the Mini DEX, you'll need test tokens. The application includes a built-in faucet system for easy token distribution.
 
-### **Method 1: Solana Faucet (Recommended)**
+### **Built-in Faucet System**
+
+The Mini DEX includes a convenient faucet that allows you to get test tokens directly from the application:
+
+1. **Connect your wallet** to the application
+2. **Navigate to the Home page**
+3. **Click "Get Test Tokens"** for any token you want
+4. **Sign the transaction** to receive tokens
+
+### **Available Test Tokens**
+
+| Token           | Symbol | Amount per Claim | Decimals |
+| --------------- | ------ | ---------------- | -------- |
+| **Test USDC**   | TUSDC  | 100 tokens       | 6        |
+| **Test USDT**   | TUSDT  | 100 tokens       | 6        |
+| **Test BTC**    | TBTC   | 0.1 tokens       | 8        |
+| **Test ETH**    | TETH   | 0.1 tokens       | 8        |
+| **MyDex Token** | MDX    | 1000 tokens      | 9        |
+
+### **Faucet Features**
+
+- **One-time use per token**: Each token can only be claimed once per wallet
+- **Automatic ATA creation**: Associated Token Accounts are created automatically
+- **Pre-determined amounts**: No need to specify amounts - fixed amounts are distributed
+- **Instant distribution**: Tokens are transferred immediately after transaction confirmation
+
+### **Getting SOL for Transaction Fees**
+
+For transaction fees, you'll need SOL:
 
 1. Visit the [Solana Faucet](https://faucet.solana.com/)
 2. Enter your wallet address
-3. Request SOL (you'll need this for transaction fees)
-
-### **Method 2: SPL Token Faucet**
-
-For test tokens, you can use the SPL Token Faucet:
-
-1. Visit [SPL Token Faucet](https://spl-token-faucet.com/)
-2. Enter your wallet address
-3. Select the token you want to mint
-4. Click "Get Tokens"
-
-### **Test Token Mint Addresses**
-
-| Token           | Symbol | Mint Address                                   | Decimals |
-| --------------- | ------ | ---------------------------------------------- | -------- |
-| **SOL**         | SOL    | `So11111111111111111111111111111111111111112`  | 9        |
-| **Test USDC**   | TUSDC  | `2RBxqb1yVPyWSK4DjZjprtserYo2fmTTRoPf8Yhvxyfa` | 6        |
-| **Test USDT**   | TUSDT  | `8yHJmmnMjcwCCrLtDKMkJV4n6hvyDoN5WFk9ge2HjQQo` | 6        |
-| **Test BTC**    | TBTC   | `3LppUQ8uRDDyMJ3TnjJkzTv3qSKY7o5JrFNhSynXGNhC` | 8        |
-| **Test ETH**    | TETH   | `EbPVsgeyPnkn5Zu3PruQpzkHPdRGXifbKp29h8ModgXL` | 8        |
-| **MyDex Token** | MDX    | `Bqqn5Z8mnu8qmqTJz53L1PH83xQyE4omBFXZ7MYeSNvo` | 9        |
-
-### **Manual Token Minting (Advanced)**
-
-If you need to create your own test tokens:
-
-```bash
-# Create a new SPL token
-spl-token create-token
-
-# Create token account
-spl-token create-account <TOKEN_MINT_ADDRESS>
-
-# Mint tokens to your account
-spl-token mint <TOKEN_MINT_ADDRESS> <AMOUNT>
-```
-
-### **Required Tokens for Testing**
-
-- **SOL**: For transaction fees and native swaps
-- **At least 2 different tokens**: To create liquidity pools and test swaps
-- **Recommended**: Get TUSDC, TUSDT, and MDX for comprehensive testing
+3. Request SOL (needed for transaction fees)
 
 ### **Token Balance Check**
 
-You can check your token balances in the DEX interface or using Solana CLI:
+You can check your token balances directly in the DEX interface:
 
-```bash
-# Check SOL balance
-solana balance
-
-# Check SPL token balance
-spl-token balance <TOKEN_MINT_ADDRESS>
-```
+- **Home page**: Shows faucet status and available tokens
+- **Swap page**: Displays your token balances
+- **Pools page**: Shows LP token balances
 
 ## 🛠️ Development
 
