@@ -29,7 +29,6 @@ const CreatePoolTab: React.FC<CreatePoolTabProps> = ({
   initSteps,
   canCreatePools,
   deployerAddress,
-  isCheckingDeployer,
   onTokenAChange,
   onTokenBChange,
   onFeeRateChange,

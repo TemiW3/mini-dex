@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { Token } from '../types/token'
 import { TOKENS } from '../constants/tokens'
@@ -41,18 +41,7 @@ const TokenSelector: React.FC<TokenSelectorProps> = ({ selectedToken, onTokenSel
   }
 
   // Token icon component with fallback
-  const TokenImage: React.FC<{ src: string; alt: string; className: string }> = ({ src, alt, className }) => {
-    const [imageError, setImageError] = useState(false)
-    const [imageLoaded, setImageLoaded] = useState(false)
-
-    const handleImageError = () => {
-      setImageError(true)
-    }
-
-    const handleImageLoad = () => {
-      setImageLoaded(true)
-    }
-
+  const TokenImage: React.FC<{ src: string; alt: string; className: string }> = ({ alt, className }) => {
     // Always show fallback for now since external images have CORS issues
     return <div className={`${className} bg-gradient-to-br ${getTokenColor(alt)} token-icon`}>{getTokenIcon(alt)}</div>
   }

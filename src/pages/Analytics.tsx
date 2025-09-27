@@ -3,12 +3,9 @@ import { TrendingUp, Activity, DollarSign, Users, RefreshCw } from 'lucide-react
 import PoolStats from '../components/PoolStats'
 import { useMiniDex } from '../hooks/useMiniDex'
 import { TOKENS } from '../constants/tokens'
-import { useConnection } from '@solana/wallet-adapter-react'
-import { PublicKey } from '@solana/web3.js'
 
 const Analytics: React.FC = () => {
   const { listExistingPools } = useMiniDex()
-  const { connection } = useConnection()
   const [metrics, setMetrics] = useState({
     totalVolume: 0,
     activePools: 0,

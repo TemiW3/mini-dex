@@ -8,7 +8,7 @@ interface PoolRatioInfoProps {
   ratioError: string
 }
 
-const PoolRatioInfo: React.FC<PoolRatioInfoProps> = ({ poolHasLiquidity, poolRatio, amountA, ratioError }) => {
+const PoolRatioInfo: React.FC<PoolRatioInfoProps> = ({ poolHasLiquidity, poolRatio, ratioError }) => {
   return (
     <>
       {/* Pool Ratio Information */}
